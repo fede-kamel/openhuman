@@ -322,22 +322,25 @@ fn allowed_subagent_ids_for(
     let agent_id = agent_id.trim();
     let registry = session_definition_registry(config, definition);
     let resolved = registry.get(agent_id).or_else(|| {
-        definition
+        // Exact matches are handled above. For channel-renamed ids, choose
+        // the most-specific registry definition before falling back to the
+        // supplied session definition: a shorter session id must not shadow a
+        // longer custom definition that also matches the renamed id.
+        registry
+            .list()
+            .into_iter()
             .filter(|candidate| {
                 agent_id
                     .strip_prefix(&candidate.id)
                     .is_some_and(|suffix| suffix.starts_with('_'))
             })
+            .max_by_key(|candidate| candidate.id.len())
             .or_else(|| {
-                registry
-                    .list()
-                    .into_iter()
-                    .filter(|candidate| {
-                        agent_id
-                            .strip_prefix(&candidate.id)
-                            .is_some_and(|suffix| suffix.starts_with('_'))
-                    })
-                    .max_by_key(|candidate| candidate.id.len())
+                definition.filter(|candidate| {
+                    agent_id
+                        .strip_prefix(&candidate.id)
+                        .is_some_and(|suffix| suffix.starts_with('_'))
+                })
             })
     })?;
     Some(crate::agent::registry::effective_subagent_allowlist(

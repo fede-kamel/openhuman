@@ -150,6 +150,16 @@ fn an_empty_saved_subagents_allowlist_withdraws_the_spawn_tool() {
         agent.effective_subagent_ids().is_empty(),
         "the execute-side gate is deny-all"
     );
+    let native = agent
+        .tools()
+        .iter()
+        .find(|tool| tool.name() == "spawn_async_subagent")
+        .expect("the native tool remains registered for dispatch");
+    assert_eq!(
+        native.parameters_schema()["properties"]["agent_id"]["enum"],
+        serde_json::json!([]),
+        "native tool calling must receive an explicitly empty scope"
+    );
 }
 
 #[test]
@@ -165,4 +175,26 @@ fn an_exact_registry_id_wins_over_a_parent_definition_prefix() {
     let allowed = super::super::allowed_subagent_ids_for("foo_bar", Some(&config), Some(&parent))
         .expect("exact registry entry resolves");
     assert!(allowed.is_empty(), "the exact foo_bar definition wins");
+}
+
+#[test]
+fn the_longest_registry_prefix_wins_over_a_shorter_session_definition() {
+    let mut parent = builtin_def("orchestrator");
+    parent.id = "foo".to_string();
+    parent.subagents = vec![crate::agent::harness::definition::SubagentEntry::AgentId(
+        "parent_child".into(),
+    )];
+
+    let tmp = tempfile::TempDir::new().unwrap();
+    let mut config = test_config(&tmp);
+    config.agent_registry.entries = vec![registry_entry(
+        "foo_bar",
+        AgentRegistrySource::Custom,
+        &["specific_child"],
+    )];
+
+    let allowed =
+        super::super::allowed_subagent_ids_for("foo_bar_thread", Some(&config), Some(&parent))
+            .expect("matching registry prefix resolves");
+    assert_eq!(allowed, vec!["specific_child"]);
 }
