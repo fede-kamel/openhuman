@@ -290,29 +290,12 @@ pub(super) fn should_synthesize_delegation_tools(def: &AgentDefinition) -> bool 
 /// (`agent_registry_update` on this agent) when `config` carries one, so the
 /// advertised enum follows the user's edit without a restart (#6934).
 fn allowed_subagent_ids_for(
-    agent_id: &str,
+    _agent_id: &str,
     config: Option<&crate::config::Config>,
     definition: Option<&crate::agent::harness::definition::AgentDefinition>,
 ) -> Option<Vec<String>> {
-    let definition = definition.or_else(|| {
-        let registry = crate::agent::harness::AgentDefinitionRegistry::global()?;
-        registry.get(agent_id).or_else(|| {
-            let best = registry
-                .list()
-                .iter()
-                .filter(|d| {
-                    agent_id
-                        .strip_prefix(d.id.as_str())
-                        .is_some_and(|rest| rest.starts_with('_'))
-                })
-                .max_by_key(|d| d.id.len())?
-                .id
-                .clone();
-            registry.get(&best)
-        })
-    });
+    let definition = definition?;
     Some(crate::agent::registry::effective_subagent_allowlist(
-        config,
-        definition?,
+        config, definition,
     ))
 }
