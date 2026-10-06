@@ -149,12 +149,19 @@ pub(super) fn visible_tool_specs_for_policy(
             if spec.name == "spawn_async_subagent" {
                 // Same narrowing for the spawn enum: advertise only the ids
                 // this agent's `[subagents]` allowlist lets `execute` dispatch.
-                let allowed = allowed_subagent_ids_for(&tool_policy.profile.agent_id, config);
-                if !allowed.is_empty() {
-                    crate::agent::orchestration::tools::scope_spawn_async_subagent_spec(
-                        Arc::make_mut(&mut spec),
-                        &allowed,
-                    );
+                // A resolved agent whose effective allowlist is empty (shipped
+                // that way, or a saved override cleared it) may spawn nothing:
+                // `execute` refuses every id, so drop the tool rather than fall
+                // back to the unscoped whole-registry enum.
+                match allowed_subagent_ids_for(&tool_policy.profile.agent_id, config) {
+                    Some(allowed) if allowed.is_empty() => return None,
+                    Some(allowed) => {
+                        crate::agent::orchestration::tools::scope_spawn_async_subagent_spec(
+                            Arc::make_mut(&mut spec),
+                            &allowed,
+                        )
+                    }
+                    None => {}
                 }
                 return Some(spec);
             }
@@ -274,16 +281,18 @@ pub(super) fn should_synthesize_delegation_tools(def: &AgentDefinition) -> bool 
 ///
 /// Tolerates the web channel's `orchestrator_<thread>` rename the same way the
 /// orchestrator prompt does: exact match first, then the longest registry id
-/// the name extends at an `_` boundary. Empty when the registry is not up or
-/// the id resolves to nothing, which leaves the schema untouched.
+/// the name extends at an `_` boundary. `None` when the registry is not up or
+/// the id resolves to nothing, which leaves the schema untouched; `Some(empty)`
+/// is a resolved agent that may spawn nothing (deny-all, like the execute gate).
 ///
 /// The shipped `[subagents]` list is replaced by a saved registry override
 /// (`agent_registry_update` on this agent) when `config` carries one, so the
 /// advertised enum follows the user's edit without a restart (#6934).
-fn allowed_subagent_ids_for(agent_id: &str, config: Option<&crate::config::Config>) -> Vec<String> {
-    let Some(registry) = crate::agent::harness::AgentDefinitionRegistry::global() else {
-        return Vec::new();
-    };
+fn allowed_subagent_ids_for(
+    agent_id: &str,
+    config: Option<&crate::config::Config>,
+) -> Option<Vec<String>> {
+    let registry = crate::agent::harness::AgentDefinitionRegistry::global()?;
     let definition = registry.get(agent_id).or_else(|| {
         let best = registry
             .list()
@@ -298,8 +307,8 @@ fn allowed_subagent_ids_for(agent_id: &str, config: Option<&crate::config::Confi
             .clone();
         registry.get(&best)
     });
-    let Some(definition) = definition else {
-        return Vec::new();
-    };
-    crate::agent::registry::effective_subagent_allowlist(config, definition)
+    Some(crate::agent::registry::effective_subagent_allowlist(
+        config,
+        definition?,
+    ))
 }

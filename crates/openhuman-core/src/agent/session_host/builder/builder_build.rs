@@ -27,8 +27,11 @@ impl SessionHostBuilder {
             .map(|definition| definition.id.clone())
             .or_else(|| self.agent_definition_name.clone());
         if let Some(agent_id) = spawn_scope_id {
+            // An empty allowlist leaves the instance alone: the spec view
+            // drops the tool entirely (`visible_tool_specs_for_policy`).
             let allowed =
-                super::allowed_subagent_ids_for(agent_id.trim(), self.runtime_config.as_deref());
+                super::allowed_subagent_ids_for(agent_id.trim(), self.runtime_config.as_deref())
+                    .unwrap_or_default();
             if !allowed.is_empty() {
                 if let Some(slot) = tools
                     .iter_mut()

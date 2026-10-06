@@ -114,3 +114,41 @@ fn without_an_override_the_scoped_spawn_spec_is_the_shipped_allowlist() {
     shipped.dedup();
     assert_eq!(visible, shipped);
 }
+
+/// A saved override that clears the allowlist means "no sub-agents"
+/// (`AgentSubagentPolicy`: "Empty means no subagent calls"). The execute gate
+/// already refuses every id for an empty set, so the spawn tool must not be
+/// advertised with the unscoped whole-registry enum either: it leaves the
+/// provider-facing view, and the parent's gate stays empty.
+#[test]
+fn an_empty_saved_subagents_allowlist_withdraws_the_spawn_tool() {
+    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
+    let tmp = tempfile::TempDir::new().unwrap();
+    assert!(
+        !builtin_def("orchestrator")
+            .allowed_subagent_ids()
+            .is_empty(),
+        "fixture: the shipped orchestrator may spawn sub-agents"
+    );
+    let mut config = test_config(&tmp);
+    config.agent_registry.entries = vec![registry_entry(
+        "orchestrator",
+        AgentRegistrySource::Default,
+        &[],
+    )];
+
+    let agent = crate::agent::OpenHumanSessionHost::from_config_for_agent(&config, "orchestrator")
+        .expect("orchestrator session build");
+
+    assert!(
+        !agent
+            .visible_tool_specs_arc()
+            .iter()
+            .any(|spec| spec.name == "spawn_async_subagent"),
+        "an empty saved allowlist must not advertise spawn_async_subagent"
+    );
+    assert!(
+        agent.effective_subagent_ids().is_empty(),
+        "the execute-side gate is deny-all"
+    );
+}
