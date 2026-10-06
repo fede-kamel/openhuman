@@ -187,6 +187,30 @@ pub(super) fn visible_tool_specs_for_policy(
         .collect()
 }
 
+pub(super) fn session_definition_registry(
+    config: Option<&crate::config::Config>,
+    definition: Option<&crate::agent::harness::definition::AgentDefinition>,
+) -> crate::agent::harness::definition::AgentDefinitionRegistry {
+    let mut registry =
+        crate::agent::harness::definition::AgentDefinitionRegistry::builtins_only();
+    if let Some(config) = config {
+        for entry in &config.agent_registry.entries {
+            if entry.enabled
+                && matches!(
+                    entry.source,
+                    crate::agent::registry::AgentRegistrySource::Custom
+                )
+            {
+                registry.insert(crate::agent::registry::definition_from_registry_entry(entry));
+            }
+        }
+    }
+    if let Some(definition) = definition {
+        registry.insert(definition.clone());
+    }
+    registry
+}
+
 /// Ensure the CCR recovery tool (`juice_retrieve`) is a member of a
 /// non-empty visibility allowlist. Compaction runs on every agent's tool
 /// output, so any agent with a curated `ToolScope::Named` list must still be
@@ -295,28 +319,25 @@ fn allowed_subagent_ids_for(
     definition: Option<&crate::agent::harness::definition::AgentDefinition>,
 ) -> Option<Vec<String>> {
     let agent_id = agent_id.trim();
-    let resolved = crate::agent::harness::definition::AgentDefinitionRegistry::global()
-        .and_then(|registry| {
-            registry
-                .get(agent_id)
-                .or_else(|| {
-                    registry
-                        .list()
-                        .into_iter()
-                        .filter(|candidate| {
-                            agent_id
-                                .strip_prefix(&candidate.id)
-                                .is_some_and(|suffix| suffix.starts_with('_'))
-                        })
-                        .max_by_key(|candidate| candidate.id.len())
-                })
+    let registry = session_definition_registry(config, definition);
+    let resolved = definition
+        .filter(|candidate| {
+            agent_id == candidate.id
+                || agent_id
+                    .strip_prefix(&candidate.id)
+                    .is_some_and(|suffix| suffix.starts_with('_'))
         })
         .or_else(|| {
-            definition.filter(|candidate| {
-                agent_id == candidate.id
-                    || agent_id
-                        .strip_prefix(&candidate.id)
-                        .is_some_and(|suffix| suffix.starts_with('_'))
+            registry.get(agent_id).or_else(|| {
+                registry
+                    .list()
+                    .into_iter()
+                    .filter(|candidate| {
+                        agent_id
+                            .strip_prefix(&candidate.id)
+                            .is_some_and(|suffix| suffix.starts_with('_'))
+                    })
+                    .max_by_key(|candidate| candidate.id.len())
             })
         })?;
     Some(crate::agent::registry::effective_subagent_allowlist(

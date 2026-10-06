@@ -164,13 +164,7 @@ impl Tool for SpawnAsyncSubagentTool {
 
     fn parameters_schema(&self) -> serde_json::Value {
         let scoped = self.scoped;
-        let agent_ids: Vec<String> = if scoped {
-            self.advertised_ids.clone()
-        } else {
-            AgentDefinitionRegistry::global()
-                .map(|reg| reg.list().iter().map(|d| d.id.clone()).collect())
-                .unwrap_or_default()
-        };
+        let agent_ids: Vec<String> = self.advertised_ids.clone();
 
         let agent_id_schema = if agent_ids.is_empty() && !scoped {
             json!({

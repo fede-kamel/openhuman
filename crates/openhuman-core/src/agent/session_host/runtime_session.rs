@@ -367,27 +367,10 @@ impl OpenHumanTurnPrelude {
         }) else {
             return Ok(());
         };
-        let mut owned_registry;
-        let registry = if let Some(registry) = AgentDefinitionRegistry::global() {
-            registry
-        } else {
-            owned_registry = AgentDefinitionRegistry::builtins_only();
-            if let Some(config) = self.runtime_config.as_deref() {
-                for entry in &config.agent_registry.entries {
-                    if matches!(
-                        entry.source,
-                        crate::agent::registry::AgentRegistrySource::Custom
-                    ) && entry.enabled
-                    {
-                        owned_registry.insert(
-                            crate::agent::registry::definition_from_registry_entry(entry),
-                        );
-                    }
-                }
-            }
-            owned_registry.insert(definition.clone());
-            &owned_registry
-        };
+        let registry = super::builder::session_definition_registry(
+            self.runtime_config.as_deref(),
+            Some(&definition),
+        );
         let mut effective_definition = definition.clone();
         effective_definition.subagents = crate::agent::registry::effective_subagent_allowlist(
             self.runtime_config.as_deref(),
@@ -396,9 +379,6 @@ impl OpenHumanTurnPrelude {
         .into_iter()
         .map(crate::agent::harness::definition::SubagentEntry::AgentId)
         .collect();
-        if effective_definition.subagents.is_empty() {
-            return Ok(());
-        }
         let (integrations, integrations_are_authoritative) = {
             let mutable = self
                 .mutable
@@ -416,7 +396,7 @@ impl OpenHumanTurnPrelude {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut collected =
-            collect_orchestrator_tools(&effective_definition, registry, &integrations);
+            collect_orchestrator_tools(&effective_definition, &registry, &integrations);
         #[cfg(feature = "mcp")]
         collected.extend(mcp_tools);
         let rebuilt = self.rebuilt_recorded_tools(
