@@ -191,8 +191,7 @@ pub(super) fn session_definition_registry(
     config: Option<&crate::config::Config>,
     definition: Option<&crate::agent::harness::definition::AgentDefinition>,
 ) -> crate::agent::harness::definition::AgentDefinitionRegistry {
-    let mut registry =
-        crate::agent::harness::definition::AgentDefinitionRegistry::builtins_only();
+    let mut registry = crate::agent::harness::definition::AgentDefinitionRegistry::builtins_only();
     if let Some(config) = config {
         for entry in &config.agent_registry.entries {
             if entry.enabled
@@ -201,7 +200,9 @@ pub(super) fn session_definition_registry(
                     crate::agent::registry::AgentRegistrySource::Custom
                 )
             {
-                registry.insert(crate::agent::registry::definition_from_registry_entry(entry));
+                registry.insert(crate::agent::registry::definition_from_registry_entry(
+                    entry,
+                ));
             }
         }
     }

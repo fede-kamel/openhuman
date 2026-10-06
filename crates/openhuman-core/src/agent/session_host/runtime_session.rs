@@ -269,7 +269,6 @@ impl OpenHumanTurnPrelude {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .pending_user_text = user_text;
     }
-
     fn build_system_prompt_tiered(&self) -> Result<crate::agent::prompts::TieredPrompt> {
         use crate::agent::prompts::{tool_call_format_from_dialect, PromptContext, PromptTool};
         let surface = self
@@ -355,7 +354,6 @@ impl OpenHumanTurnPrelude {
             .synthesized_tool_names
             .clone()
     }
-
     fn refresh_delegation_tool_surface(&self) -> anyhow::Result<()> {
         use crate::agent::harness::definition::AgentDefinitionRegistry;
         use crate::tools::agent_policy::ToolPolicyEngine;
@@ -501,7 +499,6 @@ impl OpenHumanTurnPrelude {
         surface.tool_policy_session = policy;
         Ok(())
     }
-
     fn drain_host_events(&self) -> bool {
         let mut mutable = self
             .mutable
@@ -1487,10 +1484,8 @@ impl OpenHumanSessionHost {
         }
     }
 }
-
 #[path = "prelude_integrations.rs"]
 mod prelude_integrations;
-
 #[cfg(test)]
 #[path = "runtime_session_tests.rs"]
 mod tests;
