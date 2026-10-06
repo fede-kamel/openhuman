@@ -321,15 +321,14 @@ fn allowed_subagent_ids_for(
 ) -> Option<Vec<String>> {
     let agent_id = agent_id.trim();
     let registry = session_definition_registry(config, definition);
-    let resolved = definition
-        .filter(|candidate| {
-            agent_id == candidate.id
-                || agent_id
+    let resolved = registry.get(agent_id).or_else(|| {
+        definition
+            .filter(|candidate| {
+                agent_id
                     .strip_prefix(&candidate.id)
                     .is_some_and(|suffix| suffix.starts_with('_'))
-        })
-        .or_else(|| {
-            registry.get(agent_id).or_else(|| {
+            })
+            .or_else(|| {
                 registry
                     .list()
                     .into_iter()
@@ -340,7 +339,7 @@ fn allowed_subagent_ids_for(
                     })
                     .max_by_key(|candidate| candidate.id.len())
             })
-        })?;
+    })?;
     Some(crate::agent::registry::effective_subagent_allowlist(
         config, resolved,
     ))

@@ -151,3 +151,18 @@ fn an_empty_saved_subagents_allowlist_withdraws_the_spawn_tool() {
         "the execute-side gate is deny-all"
     );
 }
+
+#[test]
+fn an_exact_registry_id_wins_over_a_parent_definition_prefix() {
+    let mut parent = builtin_def("orchestrator");
+    parent.id = "foo".to_string();
+
+    let tmp = tempfile::TempDir::new().unwrap();
+    let mut config = test_config(&tmp);
+    config.agent_registry.entries =
+        vec![registry_entry("foo_bar", AgentRegistrySource::Custom, &[])];
+
+    let allowed = super::super::allowed_subagent_ids_for("foo_bar", Some(&config), Some(&parent))
+        .expect("exact registry entry resolves");
+    assert!(allowed.is_empty(), "the exact foo_bar definition wins");
+}

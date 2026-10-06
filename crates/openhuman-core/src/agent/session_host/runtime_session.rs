@@ -355,28 +355,27 @@ impl OpenHumanTurnPrelude {
             .clone()
     }
     fn refresh_delegation_tool_surface(&self) -> anyhow::Result<()> {
-        use crate::agent::harness::definition::AgentDefinitionRegistry;
         use crate::tools::agent_policy::ToolPolicyEngine;
         use crate::tools::orchestrator_tools::collect_orchestrator_tools;
 
-        let Some(definition) = self.session_definition.as_deref().cloned().or_else(|| {
-            AgentDefinitionRegistry::global()
-                .and_then(|registry| registry.get(&self.agent_definition_id).cloned())
-        }) else {
+        let Some(definition) = self.session_definition.as_deref().cloned() else {
             return Ok(());
         };
         let registry = super::builder::session_definition_registry(
             self.runtime_config.as_deref(),
             Some(&definition),
         );
-        let mut effective_definition = definition.clone();
-        effective_definition.subagents = crate::agent::registry::effective_subagent_allowlist(
+        let effective_subagent_ids = crate::agent::registry::effective_subagent_allowlist(
             self.runtime_config.as_deref(),
             &definition,
-        )
-        .into_iter()
-        .map(crate::agent::harness::definition::SubagentEntry::AgentId)
-        .collect();
+        );
+        let mut effective_definition = definition.clone();
+        if effective_subagent_ids != definition.allowed_subagent_ids() {
+            effective_definition.subagents = effective_subagent_ids
+                .into_iter()
+                .map(crate::agent::harness::definition::SubagentEntry::AgentId)
+                .collect();
+        }
         let (integrations, integrations_are_authoritative) = {
             let mutable = self
                 .mutable
