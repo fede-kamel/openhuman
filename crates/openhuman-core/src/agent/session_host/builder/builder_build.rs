@@ -27,28 +27,24 @@ impl SessionHostBuilder {
             .map(|definition| definition.id.clone())
             .or_else(|| self.agent_definition_name.clone());
         if let Some(agent_id) = spawn_scope_id {
-            // An empty allowlist leaves the instance alone: the spec view
-            // drops the tool entirely (`visible_tool_specs_for_policy`).
             let allowed = super::allowed_subagent_ids_for(
                 agent_id.trim(),
                 self.runtime_config.as_deref(),
                 self.session_definition.as_deref(),
             )
             .unwrap_or_default();
-            if !allowed.is_empty() {
-                if let Some(slot) = tools
-                    .iter_mut()
-                    .find(|tool| tool.name() == "spawn_async_subagent")
-                {
-                    tracing::debug!(
-                        agent = %agent_id,
-                        ids = allowed.len(),
-                        "[tools] scoping spawn_async_subagent schema to the subagent allowlist"
-                    );
-                    *slot = Box::new(
-                        crate::agent::orchestration::tools::SpawnAsyncSubagentTool::scoped(allowed),
-                    );
-                }
+            if let Some(slot) = tools
+                .iter_mut()
+                .find(|tool| tool.name() == "spawn_async_subagent")
+            {
+                tracing::debug!(
+                    agent = %agent_id,
+                    ids = allowed.len(),
+                    "[tools] scoping spawn_async_subagent schema to the subagent allowlist"
+                );
+                *slot = Box::new(
+                    crate::agent::orchestration::tools::SpawnAsyncSubagentTool::scoped(allowed),
+                );
             }
         }
         // The synthesised set lives beside the durable registry, never inside
@@ -487,7 +483,7 @@ impl SessionHostBuilder {
             connected_integrations_initialized: false,
             runtime_config,
             hosted_base,
-            definition: None,
+            definition: session_definition,
             omit_memory_context: self.omit_memory_context.unwrap_or(false),
             payload_summarizer: self.payload_summarizer,
             tokenjuice_compression: self.tokenjuice_compression,

@@ -76,6 +76,7 @@ struct OpenHumanTurnPrelude {
     omit_memory_context: bool,
     thread_id: Option<String>,
     agent_definition_id: String,
+    session_definition: Option<Arc<crate::agent::harness::definition::AgentDefinition>>,
     event_session_id: String,
     event_channel: String,
     subagent_tool_ceiling_names: std::collections::HashSet<String>,
@@ -355,11 +356,6 @@ impl OpenHumanTurnPrelude {
             .clone()
     }
 
-    /// Rebuild every delegation-dependent tool view from the current cached
-    /// integration set. This mirrors the legacy refresh's replace-not-append
-    /// semantics, but keeps the mutable authority in hook state rather than a
-    /// second turn loop. A revoked delegate is removed from the executable
-    /// source, schema, and policy together before this request is prepared.
     fn refresh_delegation_tool_surface(&self) -> anyhow::Result<()> {
         use crate::agent::harness::definition::AgentDefinitionRegistry;
         use crate::tools::agent_policy::ToolPolicyEngine;
@@ -368,7 +364,12 @@ impl OpenHumanTurnPrelude {
         let Some(registry) = AgentDefinitionRegistry::global() else {
             return Ok(());
         };
-        let Some(definition) = registry.get(&self.agent_definition_id).cloned() else {
+        let Some(definition) = self
+            .session_definition
+            .as_deref()
+            .cloned()
+            .or_else(|| registry.get(&self.agent_definition_id).cloned())
+        else {
             return Ok(());
         };
         if definition.subagents.is_empty() {
@@ -427,9 +428,6 @@ impl OpenHumanTurnPrelude {
             &mut surface.visible_tool_names,
             &agent_definition_name,
         );
-        // Same split as the session host's `recompute_deferred_tool_names`:
-        // a `Deferred` synthesised tool leaves the wire and joins the
-        // searchable set, on a belt that opted into discovery.
         if surface.discovery_enabled {
             let deferred = crate::tools::implementations::meta::deferred_set(
                 surface.tools.as_slice(),
@@ -489,7 +487,7 @@ impl OpenHumanTurnPrelude {
                 &surface.visible_tool_names,
                 &policy,
                 self.runtime_config.as_deref(),
-                None,
+                self.session_definition.as_deref(),
             ),
         );
         surface.tool_specs = Arc::new(specs);
@@ -1022,6 +1020,7 @@ impl OpenHumanSessionHost {
                 omit_memory_context: self.omit_memory_context,
                 thread_id: self.thread_id.clone(),
                 agent_definition_id: self.agent_definition_id.clone(),
+                session_definition: self.definition.clone(),
                 event_session_id: self.event_session_id.clone(),
                 event_channel: self.event_channel.clone(),
                 subagent_tool_ceiling_names: self.subagent_tool_ceiling_names.clone(),

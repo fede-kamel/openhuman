@@ -124,12 +124,9 @@ impl Default for SpawnAsyncSubagentTool {
 /// rest, so advertising them only bought a refused call and a slice of schema
 /// on every turn. Called from the per-session spec view
 /// (`builder::visible_tool_specs_for_policy`), the same place `use_skill`'s
-/// pack index is narrowed. A missing or empty allowlist leaves the spec alone:
-/// wildcard parents keep the full registry.
+/// pack index is narrowed. A missing allowlist leaves the spec alone; an empty
+/// allowlist produces an empty enum for native tool-calling's schema.
 pub fn scope_spawn_async_subagent_spec(spec: &mut tinytools::ToolSpec, allowed: &[String]) {
-    if allowed.is_empty() {
-        return;
-    }
     let Some(enum_slot) = spec
         .parameters
         .pointer_mut("/properties/agent_id/enum")
