@@ -507,6 +507,15 @@ fn scoped_instance_advertises_exactly_the_allowlist() {
         .contains("only these are dispatchable"));
 }
 
+#[test]
+fn scoped_instance_advertises_an_empty_enum_for_deny_all() {
+    let schema = SpawnAsyncSubagentTool::scoped(Vec::new()).parameters_schema();
+    assert_eq!(
+        schema["properties"]["agent_id"]["enum"],
+        serde_json::json!([])
+    );
+}
+
 /// #6934: a custom agent lives only in `config.agent_registry`, so a
 /// registry-only lookup refused every allowlisted custom id as "unknown
 /// agent_id" even once the parent's allowlist named it. With the parent's
