@@ -361,15 +361,13 @@ impl OpenHumanTurnPrelude {
         use crate::tools::agent_policy::ToolPolicyEngine;
         use crate::tools::orchestrator_tools::collect_orchestrator_tools;
 
-        let Some(registry) = AgentDefinitionRegistry::global() else {
+        let Some(definition) = self.session_definition.as_deref().cloned().or_else(|| {
+            AgentDefinitionRegistry::global()
+                .and_then(|registry| registry.get(&self.agent_definition_id).cloned())
+        }) else {
             return Ok(());
         };
-        let Some(definition) = self
-            .session_definition
-            .as_deref()
-            .cloned()
-            .or_else(|| registry.get(&self.agent_definition_id).cloned())
-        else {
+        let Some(registry) = AgentDefinitionRegistry::global() else {
             return Ok(());
         };
         if definition.subagents.is_empty() {

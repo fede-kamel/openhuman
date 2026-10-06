@@ -27,24 +27,20 @@ impl SessionHostBuilder {
             .map(|definition| definition.id.clone())
             .or_else(|| self.agent_definition_name.clone());
         if let Some(agent_id) = spawn_scope_id {
-            let allowed = super::allowed_subagent_ids_for(
+            if let Some(allowed) = super::allowed_subagent_ids_for(
                 agent_id.trim(),
                 self.runtime_config.as_deref(),
                 self.session_definition.as_deref(),
-            )
-            .unwrap_or_default();
-            if let Some(slot) = tools
-                .iter_mut()
-                .find(|tool| tool.name() == "spawn_async_subagent")
-            {
-                tracing::debug!(
-                    agent = %agent_id,
-                    ids = allowed.len(),
-                    "[tools] scoping spawn_async_subagent schema to the subagent allowlist"
-                );
-                *slot = Box::new(
-                    crate::agent::orchestration::tools::SpawnAsyncSubagentTool::scoped(allowed),
-                );
+            ) {
+                if let Some(slot) = tools
+                    .iter_mut()
+                    .find(|tool| tool.name() == "spawn_async_subagent")
+                {
+                    tracing::debug!(agent = %agent_id, ids = allowed.len(), "[tools] scoping spawn_async_subagent schema");
+                    *slot = Box::new(
+                        crate::agent::orchestration::tools::SpawnAsyncSubagentTool::scoped(allowed),
+                    );
+                }
             }
         }
         // The synthesised set lives beside the durable registry, never inside

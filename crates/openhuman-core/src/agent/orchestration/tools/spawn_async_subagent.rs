@@ -29,9 +29,9 @@ use tinytools::ToolRunContext;
 use tinytools::{PermissionLevel, Tool, ToolCallOptions, ToolResult};
 
 pub struct SpawnAsyncSubagentTool {
-    /// The ids this instance advertises in its `agent_id` enum. Empty means
-    /// the whole registry. See [`SpawnAsyncSubagentTool::scoped`].
+    /// The ids this instance advertises in its `agent_id` enum.
     advertised_ids: Vec<String>,
+    scoped: bool,
 }
 
 /// Harness dispatch for the detached child path. It owns the typed parent run
@@ -87,6 +87,7 @@ impl SpawnAsyncSubagentTool {
     pub fn new() -> Self {
         Self {
             advertised_ids: Vec::new(),
+            scoped: false,
         }
     }
 
@@ -105,6 +106,7 @@ impl SpawnAsyncSubagentTool {
         ids.dedup();
         Self {
             advertised_ids: ids,
+            scoped: true,
         }
     }
 }
@@ -161,7 +163,7 @@ impl Tool for SpawnAsyncSubagentTool {
     }
 
     fn parameters_schema(&self) -> serde_json::Value {
-        let scoped = !self.advertised_ids.is_empty();
+        let scoped = self.scoped;
         let agent_ids: Vec<String> = if scoped {
             self.advertised_ids.clone()
         } else {
