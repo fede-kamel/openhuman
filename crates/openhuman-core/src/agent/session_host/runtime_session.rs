@@ -489,6 +489,7 @@ impl OpenHumanTurnPrelude {
                 &surface.visible_tool_names,
                 &policy,
                 self.runtime_config.as_deref(),
+                None,
             ),
         );
         surface.tool_specs = Arc::new(specs);

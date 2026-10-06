@@ -29,9 +29,12 @@ impl SessionHostBuilder {
         if let Some(agent_id) = spawn_scope_id {
             // An empty allowlist leaves the instance alone: the spec view
             // drops the tool entirely (`visible_tool_specs_for_policy`).
-            let allowed =
-                super::allowed_subagent_ids_for(agent_id.trim(), self.runtime_config.as_deref())
-                    .unwrap_or_default();
+            let allowed = super::allowed_subagent_ids_for(
+                agent_id.trim(),
+                self.runtime_config.as_deref(),
+                self.session_definition.as_deref(),
+            )
+            .unwrap_or_default();
             if !allowed.is_empty() {
                 if let Some(slot) = tools
                     .iter_mut()
@@ -282,6 +285,7 @@ impl SessionHostBuilder {
             &visible_names,
             &tool_policy_session,
             self.runtime_config.as_deref(),
+            self.session_definition.as_deref(),
         );
 
         // Dedupe by tool name. Anthropic (and other strict providers)

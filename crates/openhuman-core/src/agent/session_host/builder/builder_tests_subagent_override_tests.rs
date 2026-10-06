@@ -43,8 +43,8 @@ fn spawn_enum(specs: &[std::sync::Arc<tinytools::ToolSpec>]) -> Vec<String> {
 /// scoped tool instance whose schema native tool calling puts on the wire.
 #[test]
 fn a_registry_override_of_the_subagents_allowlist_changes_the_scoped_spawn_spec() {
-    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
     let tmp = tempfile::TempDir::new().unwrap();
+    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
     let shipped = builtin_def("orchestrator").allowed_subagent_ids();
     assert!(
         !shipped.iter().any(|id| id == "researcher"),
@@ -95,7 +95,6 @@ fn a_registry_override_of_the_subagents_allowlist_changes_the_scoped_spawn_spec(
 /// reach does not leak in just because it exists.
 #[test]
 fn without_an_override_the_scoped_spawn_spec_is_the_shipped_allowlist() {
-    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
     let tmp = tempfile::TempDir::new().unwrap();
     let mut config = test_config(&tmp);
     config.agent_registry.entries = vec![registry_entry(
@@ -104,6 +103,7 @@ fn without_an_override_the_scoped_spawn_spec_is_the_shipped_allowlist() {
         &[],
     )];
 
+    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
     let agent = crate::agent::OpenHumanSessionHost::from_config_for_agent(&config, "orchestrator")
         .expect("orchestrator session build");
 
@@ -122,12 +122,11 @@ fn without_an_override_the_scoped_spawn_spec_is_the_shipped_allowlist() {
 /// provider-facing view, and the parent's gate stays empty.
 #[test]
 fn an_empty_saved_subagents_allowlist_withdraws_the_spawn_tool() {
-    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
     let tmp = tempfile::TempDir::new().unwrap();
+    crate::agent::harness::AgentDefinitionRegistry::init_global_builtins().unwrap();
+    let definition = builtin_def("orchestrator");
     assert!(
-        !builtin_def("orchestrator")
-            .allowed_subagent_ids()
-            .is_empty(),
+        !definition.allowed_subagent_ids().is_empty(),
         "fixture: the shipped orchestrator may spawn sub-agents"
     );
     let mut config = test_config(&tmp);

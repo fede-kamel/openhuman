@@ -106,6 +106,7 @@ pub(super) fn visible_tool_specs_for_policy(
     visible_names: &std::collections::HashSet<String>,
     tool_policy: &ToolPolicySession,
     config: Option<&crate::config::Config>,
+    definition: Option<&crate::agent::harness::definition::AgentDefinition>,
 ) -> Vec<Arc<ToolSpec>> {
     // `use_skill`'s description carries the pack index, and its `skill` enum
     // carries the pack ids. Both are built once in `UseSkillTool::new`, before
@@ -153,7 +154,7 @@ pub(super) fn visible_tool_specs_for_policy(
                 // that way, or a saved override cleared it) may spawn nothing:
                 // `execute` refuses every id, so drop the tool rather than fall
                 // back to the unscoped whole-registry enum.
-                match allowed_subagent_ids_for(&tool_policy.profile.agent_id, config) {
+                match allowed_subagent_ids_for(&tool_policy.profile.agent_id, config, definition) {
                     Some(allowed) if allowed.is_empty() => return None,
                     Some(allowed) => {
                         crate::agent::orchestration::tools::scope_spawn_async_subagent_spec(
@@ -291,21 +292,24 @@ pub(super) fn should_synthesize_delegation_tools(def: &AgentDefinition) -> bool 
 fn allowed_subagent_ids_for(
     agent_id: &str,
     config: Option<&crate::config::Config>,
+    definition: Option<&crate::agent::harness::definition::AgentDefinition>,
 ) -> Option<Vec<String>> {
-    let registry = crate::agent::harness::AgentDefinitionRegistry::global()?;
-    let definition = registry.get(agent_id).or_else(|| {
-        let best = registry
-            .list()
-            .iter()
-            .filter(|d| {
-                agent_id
-                    .strip_prefix(d.id.as_str())
-                    .is_some_and(|rest| rest.starts_with('_'))
-            })
-            .max_by_key(|d| d.id.len())?
-            .id
-            .clone();
-        registry.get(&best)
+    let definition = definition.or_else(|| {
+        let registry = crate::agent::harness::AgentDefinitionRegistry::global()?;
+        registry.get(agent_id).or_else(|| {
+            let best = registry
+                .list()
+                .iter()
+                .filter(|d| {
+                    agent_id
+                        .strip_prefix(d.id.as_str())
+                        .is_some_and(|rest| rest.starts_with('_'))
+                })
+                .max_by_key(|d| d.id.len())?
+                .id
+                .clone();
+            registry.get(&best)
+        })
     });
     Some(crate::agent::registry::effective_subagent_allowlist(
         config,
