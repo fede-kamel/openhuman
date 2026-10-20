@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { Provider } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
@@ -127,6 +128,39 @@ describe('ProviderAuthSection connected rows', () => {
 
     expect(screen.getByTestId('provider-group-connected')).toBeInTheDocument();
     expect(screen.getByTestId('provider-row-openai')).toHaveTextContent('sk-…4f2a');
+  });
+
+  it('summarizes a connected OCI provider and edits it through the OCI dialog', async () => {
+    renderSection('header.payload.signature', {
+      draft: {
+        ...EMPTY_SETTINGS,
+        cloudProviders: [
+          provider({
+            id: 'p_oci',
+            slug: 'oci',
+            label: 'OCI Generative AI',
+            endpoint: 'https://inference.generativeai.us-chicago-1.oci.oraclecloud.com',
+            authStyle: 'oci',
+            maskedKey: 'Not configured',
+            oci: {
+              auth_mode: 'session_token',
+              transport: 'native_generic',
+              region: 'us-chicago-1',
+              compartment_id: 'ocid1.compartment.oc1..example',
+            },
+          }),
+        ],
+      },
+    });
+
+    const row = screen.getByTestId('provider-row-oci');
+    // Region and sign-in method instead of a key the entry does not hold.
+    expect(row).toHaveTextContent('us-chicago-1 · Session token');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /OCI Generative AI/ }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit OCI settings' }));
+    expect(await screen.findByTestId('oci-auth-mode')).toHaveValue('session_token');
   });
 
   it('renders a user-defined custom provider by host, with edit and remove', () => {

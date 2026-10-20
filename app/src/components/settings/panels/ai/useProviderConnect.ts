@@ -19,7 +19,10 @@ import {
   type ProviderAuthError,
   setCloudProviderKey,
 } from '../../../../services/api/aiSettingsApi';
-import { openhumanUpdateLocalAiSettings } from '../../../../utils/tauriCommands/config';
+import {
+  type OciSettings,
+  openhumanUpdateLocalAiSettings,
+} from '../../../../utils/tauriCommands/config';
 import { presentProviderSetupError } from '../ProviderSetupErrorNotice';
 import {
   type AISettings,
@@ -28,6 +31,7 @@ import {
   type CloudProvider,
   defaultEndpointFor,
   maskKeyLabel,
+  toWireCloudProvider,
 } from './aiPanelTypes';
 
 const normalizeProviderSlug = (slug: string) => slug.trim().toLowerCase();
@@ -40,7 +44,10 @@ export type ConnectCredentialMode =
   | 'codex_oauth'
   | 'endpoint'
   | 'endpoint_key'
-  | 'cli_login';
+  | 'cli_login'
+  | 'oci';
+
+const trimmedValue = (value: string): string => value.trim();
 
 export function useProviderConnect({
   draft,
@@ -97,13 +104,17 @@ export function useProviderConnect({
       value,
       endpoint: endpointOverride,
       credentialMode,
+      oci,
     }: {
       slug: string;
       localLabel?: string | null;
       value: string;
       endpoint?: string | null;
       credentialMode: ConnectCredentialMode;
+      /** OCI Generative AI settings; required when `credentialMode` is `'oci'`. */
+      oci?: OciSettings;
     }) => {
+      if (credentialMode === 'oci' && !oci) throw new Error('OCI settings are required');
       slug = normalizeProviderSlug(slug);
       const revision = (providerConnectRevisions.current.get(slug) ?? 0) + 1;
       providerConnectRevisions.current.set(slug, revision);
@@ -123,6 +134,16 @@ export function useProviderConnect({
       const isEndpointKey = credentialMode === 'endpoint_key';
       const isCodexOAuth = credentialMode === 'codex_oauth';
       const isCliLogin = credentialMode === 'cli_login';
+      const isOci = credentialMode === 'oci';
+      // OCI holds a key only in api_key mode, and keeps the stored one when the
+      // field was left blank on an edit.
+      const ociKeepsKey =
+        isOci &&
+        oci?.auth_mode === 'api_key' &&
+        (trimmedValue(value) !== '' ||
+          latestSettings.current.draft.cloudProviders.some(
+            p => isProviderSlug(p.slug, slug) && p.maskedKey.startsWith('••••')
+          ));
       setBusyAction(`toggle-${localLabel ? localLabel.toLowerCase().replace(/\s/g, '') : slug}`);
       // A fresh attempt on THIS provider clears only its own prior advisory —
       // an advisory about a different provider must survive (#5341).
@@ -159,7 +180,8 @@ export function useProviderConnect({
           caCertPem: initialProvider?.caCertPem ?? initialSavedProvider?.caCertPem,
           authStyle: authStyleForSlug(slug),
           // CLI-login providers hold no API key — reflect that honestly.
-          maskedKey: maskKeyLabel(!isCliLogin),
+          maskedKey: maskKeyLabel(isOci ? ociKeepsKey : !isCliLogin),
+          ...(isOci && oci ? { oci } : {}),
         };
 
         if (isLocalRuntime && slug === 'ollama') {
@@ -203,28 +225,28 @@ export function useProviderConnect({
             caCertPem: currentProvider?.caCertPem ?? currentSavedProvider?.caCertPem,
           };
           const priorWireProviders = currentSettings.saved.cloudProviders.map(provider => ({
-            id: provider.id,
+            ...toWireCloudProvider(provider),
             slug: normalizeProviderSlug(provider.slug),
-            label: provider.label,
-            endpoint: provider.endpoint,
-            ca_cert_pem: provider.caCertPem ?? '',
-            auth_style: provider.authStyle,
           }));
           const nextWireProviders = [
             ...priorWireProviders.filter(provider => !isProviderSlug(provider.slug, slug)),
-            {
-              id: currentUpserted.id,
-              slug: currentUpserted.slug,
-              label: currentUpserted.label,
-              endpoint: currentUpserted.endpoint,
-              ca_cert_pem: currentUpserted.caCertPem ?? '',
-              auth_style: currentUpserted.authStyle,
-            },
+            toWireCloudProvider(currentUpserted),
           ];
           let flushedProviders = nextWireProviders;
           try {
             await flushCloudProviders(flushedProviders);
-            if (!isLocalRuntime && !isCodexOAuth && !isCliLogin) {
+            if (isOci) {
+              if (oci?.auth_mode === 'api_key') {
+                // A blank key on an edit keeps the stored one.
+                if (trimmed) await setCloudProviderKey(slug, trimmed);
+              } else {
+                // Profile / principal modes hold no secret; drop any key left
+                // over from an earlier api_key configuration.
+                await clearCloudProviderKey(slug).catch(clearErr =>
+                  console.warn(`[ai-settings] clearing stale oci key failed slug=${slug}`, clearErr)
+                );
+              }
+            } else if (!isLocalRuntime && !isCodexOAuth && !isCliLogin) {
               await setCloudProviderKey(slug, trimmed);
             }
             const latestSettingsAfterKey = latestSettings.current;
@@ -253,7 +275,9 @@ export function useProviderConnect({
             );
             throw writeError;
           }
-          if (!isCodexOAuth && !isCliLogin) {
+          // OCI has no OpenAI-style `/models` listing to probe; the model id is
+          // typed by the user and validated by the first request.
+          if (!isCodexOAuth && !isCliLogin && !isOci) {
             try {
               await listProviderModels(slug);
             } catch (probeErr) {
