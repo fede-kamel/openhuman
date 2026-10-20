@@ -126,7 +126,7 @@ BYOK keeps the routing, memory, tools and agent harness exactly as they are, and
 
 Add your key in the desktop app under the LLM settings. It is stored in the OS keyring, not in plain config. OpenHuman ships presets for these slugs, so you don't need to supply an endpoint:
 
-`openai`, `anthropic`, `google`, `openrouter`, `orcarouter`, `groq`, `mistral`, `deepseek`, `together`, `fireworks`, `cerebras`, `xai`, `moonshot`, `gmi`, `huggingface`, `nvidia`, `zai`, `minimax`, `stepfun`, `kilocode`, `deepinfra`, `novita`, `venice`, `vercel-ai-gateway`, `sumopod`, `modelscope`
+`openai`, `anthropic`, `google`, `openrouter`, `orcarouter`, `groq`, `mistral`, `deepseek`, `together`, `fireworks`, `cerebras`, `xai`, `moonshot`, `gmi`, `huggingface`, `nvidia`, `zai`, `minimax`, `stepfun`, `kilocode`, `deepinfra`, `novita`, `venice`, `vercel-ai-gateway`, `sumopod`, `modelscope`, `oci` (see [OCI Generative AI](#oci-generative-ai))
 
 Anything else that speaks the OpenAI-compatible API also works. Register it with your own slug and endpoint, and it routes the same way.
 
@@ -150,6 +150,85 @@ To make one provider the default for everything that is not pinned, set `primary
 ### 3. Check that the model supports the workload
 
 BYOK gets your provider's capabilities, not OpenHuman's. Before you pin `vision_provider`, confirm the model accepts image input. Before you pin `embeddings_provider`, confirm the provider serves an embeddings endpoint. Not every chat provider does.
+
+### OCI Generative AI
+
+The `oci` slug talks to Oracle Cloud Infrastructure Generative AI through a native provider, not the OpenAI-compatible shim, so it can use OCI's own authentication. Pick **OCI Generative AI** in the LLM settings, or add an entry by hand. The model is the OCI model id: `oci:openai.gpt-5.5`, `oci:cohere.command-a-03-2025`, `oci:meta.llama-3.3-70b-instruct`.
+
+Everything except the optional API key is plain settings in `config.toml`. Key material for the profile modes is read from your OCI config directory when the model is built and is never copied into OpenHuman's config.
+
+| `auth_mode`             | Credential                                                              | Notes                                                     |
+| ----------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------- |
+| `api_key` (default)     | OCI Generative AI API key, kept in the OS keyring                       | Needs `region`.                                           |
+| `config_profile`        | API-signing-key profile in `~/.oci/config`                              | Region defaults to the profile's.                         |
+| `session_token`         | Session-token profile from `oci session authenticate`                   | Token refreshes are picked up without a restart.          |
+| `resource_principal`    | `OCI_RESOURCE_PRINCIPAL_*` environment (Functions, Container Instances) | Version 2.2 only.                                         |
+| `instance_principal`    | Compute instance identity                                               | Requires a build with the `oci-principals` cargo feature. |
+| `oke_workload_identity` | OKE workload identity                                                   | Requires a build with the `oci-principals` cargo feature. |
+
+`transport` selects the wire protocol:
+
+| `transport`        | Endpoint                                                                          | Needs `compartment_id`                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `openai` (default) | `/openai/v1`, Chat Completions                                                    | Yes, unless `auth_mode = "api_key"`. Set `project_id` (sent as `OpenAI-Project`) to the Generative AI project. |
+| `actions`          | `/20231130/actions/v1`, Chat Completions                                          | Yes                                                                                                            |
+| `native_generic`   | `/20231130/actions/chat`, `apiFormat: GENERIC` (Meta, xAI, Google, OpenAI-family) | Yes                                                                                                            |
+| `native_cohere`    | `/20231130/actions/chat`, `apiFormat: COHERE` (Cohere Command)                    | Yes                                                                                                            |
+
+Set `dedicated_endpoint_id` to address a dedicated AI cluster endpoint instead of an on-demand model.
+
+```toml
+# API key (stored in the keyring from the settings panel)
+[[cloud_providers]]
+slug = "oci"
+label = "OCI Generative AI"
+auth_style = "oci"
+[cloud_providers.oci]
+auth_mode = "api_key"
+region = "us-chicago-1"
+transport = "openai"
+
+# API-signing-key profile, native Cohere chat
+[[cloud_providers]]
+slug = "oci-cohere"
+auth_style = "oci"
+[cloud_providers.oci]
+auth_mode = "config_profile"
+config_file = "~/.oci/config"   # optional; default $OCI_CLI_CONFIG_FILE or ~/.oci/config
+profile = "DEFAULT"
+compartment_id = "ocid1.compartment.oc1..<your-compartment>"
+transport = "native_cohere"
+
+# Session token (run `oci session authenticate --profile-name SESSION` first)
+[[cloud_providers]]
+slug = "oci-session"
+auth_style = "oci"
+[cloud_providers.oci]
+auth_mode = "session_token"
+profile = "SESSION"
+region = "us-chicago-1"
+compartment_id = "ocid1.compartment.oc1..<your-compartment>"
+transport = "native_generic"
+
+# Principals (no stored secret)
+[[cloud_providers]]
+slug = "oci-principal"
+auth_style = "oci"
+[cloud_providers.oci]
+auth_mode = "instance_principal"   # or "resource_principal" / "oke_workload_identity"
+region = "us-ashburn-1"
+compartment_id = "ocid1.compartment.oc1..<your-compartment>"
+project_id = "ocid1.generativeaiproject.oc1..<your-project>"
+transport = "openai"
+```
+
+```toml
+chat_provider = "oci:openai.gpt-5.5"
+reasoning_provider = "oci-cohere:cohere.command-a-03-2025"
+```
+
+Errors name the missing field (`oci.region`, `oci.compartment_id`) or the mismatch (a session-token profile used with `config_profile`). The model dropdown cannot list OCI models, so type the model id.
+
 
 ## Mixing routes
 
