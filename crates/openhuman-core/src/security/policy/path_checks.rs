@@ -17,6 +17,16 @@ pub(crate) const SENSITIVE_COMPONENTS: &[&str] = &[
     ".kube",
     "keychains",
 ];
+/// The credential-store directories that sit directly under `$HOME`: every
+/// dot-directory in [`SENSITIVE_COMPONENTS`] (the macOS keychain lives under
+/// `~/Library` instead). Grant filters use this so they cannot drift from the
+/// path floor.
+pub(crate) fn home_credential_dirs() -> impl Iterator<Item = &'static str> {
+    SENSITIVE_COMPONENTS
+        .iter()
+        .copied()
+        .filter(|segment| segment.starts_with('.'))
+}
 /// Single-file credential stores have no protected parent directory.
 pub(crate) const SENSITIVE_FILES: &[&str] = &[".netrc", ".git-credentials", ".pgpass", ".npmrc"];
 /// Consecutive segment pairs that mark a credential store. Windows DPAPI

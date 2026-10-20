@@ -10,6 +10,7 @@ mod types;
 
 pub use enforcement::validate_path_within_root;
 pub use enforcement::{ensure_openhuman_scratch_dir, openhuman_scratch_dir};
+pub(crate) use path_checks::home_credential_dirs;
 #[cfg(any(feature = "modules", test))]
 pub(crate) use path_checks::home_credential_stores;
 #[cfg(feature = "modules")]
