@@ -11,6 +11,7 @@ import type {
   OciSettings,
   OciTransport,
 } from '../../../../utils/tauriCommands/config';
+import { defaultEndpointForBuiltinCloudProvider } from '../builtinCloudProviders';
 
 export const OCI_PROVIDER_SLUG = 'oci';
 
@@ -54,8 +55,23 @@ export const isOciGatedPrincipalMode = (mode: OciAuthMode): boolean =>
 export const ociNeedsCompartment = (settings: OciSettings): boolean =>
   settings.transport !== 'openai' || settings.auth_mode !== 'api_key';
 
-/** Only `/openai/v1` carries the optional Generative AI project header. */
+/**
+ * Only `/openai/v1` carries the Generative AI project header, and it requires
+ * one. Mirrors the core's check.
+ */
 export const ociTransportUsesProject = (transport: OciTransport): boolean => transport === 'openai';
+
+/**
+ * The `endpoint` to persist on an OCI entry: an explicit override (another
+ * realm, a private endpoint) is kept, while a blank value or the built-in
+ * preset's display URL becomes blank so the core derives the host from the
+ * region.
+ */
+export function ociEndpointOverride(existing: string | undefined): string {
+  const endpoint = trimmed(existing).replace(/\/+$/, '');
+  const preset = defaultEndpointForBuiltinCloudProvider(OCI_PROVIDER_SLUG).replace(/\/+$/, '');
+  return endpoint === preset ? '' : endpoint;
+}
 
 type OptionalOciField =
   | 'config_file'
@@ -86,6 +102,9 @@ export function validateOciSettings(
   }
   if (ociNeedsCompartment(settings) && !trimmed(settings.compartment_id)) {
     return 'settings.ai.oci.compartmentRequired';
+  }
+  if (ociTransportUsesProject(settings.transport) && !trimmed(settings.project_id)) {
+    return 'settings.ai.oci.projectRequired';
   }
   return null;
 }

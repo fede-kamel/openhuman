@@ -232,7 +232,8 @@ export const BUILTIN_CLOUD_PROVIDERS: BuiltinCloudProvider[] = [
   {
     // Native OCI provider: region, auth mode and compartment live in the
     // provider's `oci` settings, edited through `OciSettingsDialog`. The URL is
-    // a display default only; the core routes by `oci.region`.
+    // a display default only, never saved as the entry endpoint; the core
+    // routes by `oci.region`.
     slug: 'oci',
     label: 'OCI Generative AI',
     endpoint: 'https://inference.generativeai.us-chicago-1.oci.oraclecloud.com',

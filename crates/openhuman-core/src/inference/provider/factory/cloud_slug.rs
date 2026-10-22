@@ -601,8 +601,14 @@ pub(super) async fn try_create_cloud_slug_chat_model_from_string_with_native_too
                 crate::security::egress::EgressDescriptor::inference(&slug, &effective_model, true),
             );
             return Some(
-                super::oci::build_oci_chat_model(&slug, entry, key.as_str(), &effective_model)
-                    .map(|chat| (chat, effective_model.clone())),
+                super::oci::build_oci_chat_model(
+                    &slug,
+                    entry,
+                    key.as_str(),
+                    &effective_model,
+                    temperature_override,
+                )
+                .map(|chat| (chat, effective_model.clone())),
             );
         }
         style

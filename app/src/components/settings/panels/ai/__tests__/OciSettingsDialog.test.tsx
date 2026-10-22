@@ -42,10 +42,21 @@ describe('OciSettingsDialog', () => {
     const { onSubmit } = renderDialog();
     type('oci-api-key', ' genai-key ');
     type('oci-region', ' us-chicago-1 ');
+    // `/openai/v1` serves requests in a Generative AI project.
+    fireEvent.click(screen.getByTestId('oci-save'));
+    expect(await screen.findByText(/project ocid is required/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    type('oci-project', ' ocid1.generativeaiproject.oc1..example ');
     fireEvent.click(screen.getByTestId('oci-save'));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit).toHaveBeenCalledWith(
-      { auth_mode: 'api_key', transport: 'openai', region: 'us-chicago-1' },
+      {
+        auth_mode: 'api_key',
+        transport: 'openai',
+        region: 'us-chicago-1',
+        project_id: 'ocid1.generativeaiproject.oc1..example',
+      },
       'genai-key'
     );
   });
@@ -53,7 +64,12 @@ describe('OciSettingsDialog', () => {
   it('keeps a stored key when the field is left blank on an edit', async () => {
     const { onSubmit } = renderDialog({
       hasStoredKey: true,
-      initial: { auth_mode: 'api_key', transport: 'openai', region: 'us-chicago-1' },
+      initial: {
+        auth_mode: 'api_key',
+        transport: 'openai',
+        region: 'us-chicago-1',
+        project_id: 'ocid1.generativeaiproject.oc1..example',
+      },
     });
     fireEvent.click(await screen.findByTestId('oci-save'));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -73,6 +89,7 @@ describe('OciSettingsDialog', () => {
     expect(onSubmit).not.toHaveBeenCalled();
 
     type('oci-compartment', 'ocid1.compartment.oc1..example');
+    type('oci-project', 'ocid1.generativeaiproject.oc1..example');
     fireEvent.click(screen.getByTestId('oci-save'));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit).toHaveBeenCalledWith(
@@ -81,6 +98,7 @@ describe('OciSettingsDialog', () => {
         transport: 'openai',
         profile: 'SESSION',
         compartment_id: 'ocid1.compartment.oc1..example',
+        project_id: 'ocid1.generativeaiproject.oc1..example',
       },
       ''
     );
@@ -123,6 +141,7 @@ describe('OciSettingsDialog', () => {
     renderDialog({ onSubmit });
     type('oci-api-key', 'genai-key');
     type('oci-region', 'us-chicago-1');
+    type('oci-project', 'ocid1.generativeaiproject.oc1..example');
     fireEvent.click(screen.getByTestId('oci-save'));
     expect(await screen.findByText(/config file not found/i)).toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId('oci-save')).toBeEnabled());

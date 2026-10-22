@@ -157,7 +157,9 @@ export const ProviderAuthSection = ({
   const { t } = useT();
   const managedAvailable = useManagedInferenceAvailable();
   const [localAddOpen, setLocalAddOpen] = useState(false);
-  const [ociDialogOpen, setOciDialogOpen] = useState(false);
+  // Slug of the OCI entry whose settings dialog is open: the built-in `oci`
+  // or a custom slug with `authStyle: 'oci'` (e.g. `oci-cohere`).
+  const [ociDialogSlug, setOciDialogSlug] = useState<string | null>(null);
   const hostControlsAdd = controlledAddOpen !== undefined;
   const addOpen = controlledAddOpen ?? localAddOpen;
   const setAddOpen = (open: boolean) => {
@@ -253,7 +255,7 @@ export const ProviderAuthSection = ({
     if (slug === OCI_PROVIDER_SLUG) {
       // OCI is configured through its own settings form (auth mode, profile,
       // region, compartment), not the single-field key dialog.
-      setOciDialogOpen(true);
+      setOciDialogSlug(OCI_PROVIDER_SLUG);
       return;
     }
     const localLabel = LOCAL_RUNTIME_SLUGS.includes(slug as (typeof LOCAL_RUNTIME_SLUGS)[number])
@@ -352,7 +354,7 @@ export const ProviderAuthSection = ({
                 isOci
                   ? {
                       label: t('settings.ai.oci.editSettings'),
-                      onSelect: () => setOciDialogOpen(true),
+                      onSelect: () => setOciDialogSlug(slug),
                     }
                   : {
                       label: t('settings.ai.providers.replaceKey'),
@@ -395,7 +397,11 @@ export const ProviderAuthSection = ({
                 slug={existing.slug}
                 label={existing.label}
                 tone={BUILTIN_PROVIDER_META.custom?.tone ?? ''}
-                detail={hostOf(existing.endpoint) || existing.maskedKey}
+                detail={
+                  (existing.authStyle === 'oci' ? ociSettingsSummary(existing.oci, t) : '') ||
+                  hostOf(existing.endpoint) ||
+                  existing.maskedKey
+                }
                 detailMono
                 badge={<Badge variant="primary">{t('settings.ai.providers.custom')}</Badge>}
                 control={
@@ -408,7 +414,15 @@ export const ProviderAuthSection = ({
                   />
                 }
                 actions={[
-                  { label: t('common.edit'), onSelect: () => onEditCustomProvider(existing) },
+                  {
+                    label: t('common.edit'),
+                    // OCI entries keep their settings in the `oci` block, which
+                    // only the OCI dialog edits; the generic editor would drop it.
+                    onSelect: () =>
+                      existing.authStyle === 'oci'
+                        ? setOciDialogSlug(existing.slug)
+                        : onEditCustomProvider(existing),
+                  },
                   {
                     label: t('common.remove'),
                     destructive: true,
@@ -510,20 +524,24 @@ export const ProviderAuthSection = ({
         />
       </div>
 
-      {ociDialogOpen && (
+      {ociDialogSlug && (
         <OciSettingsDialog
-          label={BUILTIN_PROVIDER_META[OCI_PROVIDER_SLUG]?.label ?? OCI_PROVIDER_SLUG}
-          initial={bySlug(OCI_PROVIDER_SLUG)?.oci}
-          hasStoredKey={Boolean(bySlug(OCI_PROVIDER_SLUG)?.maskedKey.startsWith('••••'))}
-          onCancel={() => setOciDialogOpen(false)}
+          label={
+            BUILTIN_PROVIDER_META[ociDialogSlug]?.label ??
+            bySlug(ociDialogSlug)?.label ??
+            ociDialogSlug
+          }
+          initial={bySlug(ociDialogSlug)?.oci}
+          hasStoredKey={Boolean(bySlug(ociDialogSlug)?.maskedKey.startsWith('••••'))}
+          onCancel={() => setOciDialogSlug(null)}
           onSubmit={async (oci, apiKey) => {
             await onConnectProvider({
-              slug: OCI_PROVIDER_SLUG,
+              slug: ociDialogSlug,
               value: apiKey,
               credentialMode: 'oci',
               oci,
             });
-            setOciDialogOpen(false);
+            setOciDialogSlug(null);
           }}
         />
       )}
