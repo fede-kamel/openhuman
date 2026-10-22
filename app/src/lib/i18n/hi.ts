@@ -5118,7 +5118,7 @@ const messages: TranslationMap = {
     'Instance principal और OKE वर्कलोड आइडेंटिटी के लिए OCI principals सपोर्ट वाला बिल्ड चाहिए।',
   'settings.ai.oci.region': 'रीजन',
   'settings.ai.oci.compartment': 'कम्पार्टमेंट OCID',
-  'settings.ai.oci.project': 'Generative AI प्रोजेक्ट OCID (वैकल्पिक)',
+  'settings.ai.oci.project': 'Generative AI प्रोजेक्ट OCID',
   'settings.ai.oci.transport': 'प्रोटोकॉल',
   'settings.ai.oci.transport.openai': 'OpenAI-संगत',
   'settings.ai.oci.transport.actions': 'OpenAI-संगत (actions)',
@@ -5128,6 +5128,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'रीजन आवश्यक है (उदाहरण: us-chicago-1)।',
   'settings.ai.oci.compartmentRequired':
     'इस प्रोटोकॉल और साइन-इन तरीके के लिए कम्पार्टमेंट OCID आवश्यक है।',
+  'settings.ai.oci.projectRequired':
+    'OpenAI-संगत प्रोटोकॉल के लिए Generative AI प्रोजेक्ट OCID आवश्यक है।',
   'settings.ai.oci.editSettings': 'OCI सेटिंग्स संपादित करें',
 };
 

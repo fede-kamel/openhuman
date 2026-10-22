@@ -10,7 +10,7 @@
 
 use super::*;
 use crate::config::schema::cloud_providers::{
-    CloudProviderCreds, OciAuthMode, OciProviderSettings, OciTransportKind,
+    builtin_cloud_provider, CloudProviderCreds, OciAuthMode, OciProviderSettings, OciTransportKind,
 };
 use std::path::PathBuf;
 use tinyinference_llm::providers::oci::{
@@ -176,6 +176,15 @@ pub(super) fn oci_config_from_entry(
         ));
     }
 
+    // OCI's OpenAI-compatible `/openai/v1` base serves requests in a
+    // Generative AI project, sent as `OpenAI-Project`.
+    let project_id = non_empty(&settings.project_id);
+    if settings.transport == OciTransportKind::Openai && project_id.is_none() {
+        return Err(format!(
+            "OCI provider '{slug}': transport 'openai' requires oci.project_id (the Generative AI project OCID)"
+        ));
+    }
+
     let (auth, profile_region) = resolve_auth(slug, settings, key)?;
     let region = non_empty(&settings.region).or(profile_region);
     if region.is_none() && matches!(settings.auth_mode, OciAuthMode::ApiKey) {
@@ -193,28 +202,54 @@ pub(super) fn oci_config_from_entry(
     config.region = region;
     config.transport = transport;
     config.compartment_id = compartment_id;
-    config.project_id = non_empty(&settings.project_id);
+    config.project_id = project_id;
     config.serving = serving;
     Ok(config)
 }
 
 /// Applies the entry's `endpoint` as the service host override: other OCI
 /// realms, a private endpoint, or a local capture proxy (loopback http only).
-/// A blank endpoint keeps the region-derived host.
+/// A blank endpoint keeps the region-derived host, and so does the built-in
+/// preset's URL: it is a display default (the `us-chicago-1` host), and
+/// honouring it would send every region's requests to Chicago.
 fn with_entry_endpoint(slug: &str, mut config: OciConfig, entry: &CloudProviderCreds) -> OciConfig {
-    config.endpoint = non_empty(&Some(entry.endpoint.clone()));
+    let preset = builtin_cloud_provider("oci").map(|preset| preset.endpoint.trim_end_matches('/'));
+    config.endpoint = non_empty(&Some(entry.endpoint.clone()))
+        .filter(|endpoint| Some(endpoint.trim_end_matches('/')) != preset);
     if config.endpoint.is_some() {
         log::debug!("[providers][oci] slug={slug} using the entry endpoint override");
     }
     config
 }
 
+/// The complete [`OciConfig`] for an entry: its settings, the endpoint
+/// override and the route's temperature override.
+fn entry_oci_config(
+    slug: &str,
+    entry: &CloudProviderCreds,
+    settings: &OciProviderSettings,
+    key: &str,
+    model: &str,
+    temperature_override: Option<f64>,
+) -> Result<OciConfig, String> {
+    let mut config = with_entry_endpoint(
+        slug,
+        oci_config_from_entry(slug, settings, key, model)?,
+        entry,
+    );
+    config.temperature_override = temperature_override;
+    Ok(config)
+}
+
 /// Builds the OCI chat model for a resolved `oci` cloud slug.
+/// `temperature_override` is the route's `@<temperature>` suffix, which wins
+/// over the request's temperature as on every other cloud slug.
 pub(super) fn build_oci_chat_model(
     slug: &str,
     entry: &CloudProviderCreds,
     key: &str,
     model: &str,
+    temperature_override: Option<f64>,
 ) -> anyhow::Result<Arc<dyn ChatModel<()>>> {
     let settings = entry.oci.clone().unwrap_or_default();
     log::debug!(
@@ -223,8 +258,7 @@ pub(super) fn build_oci_chat_model(
         settings.transport.as_str(),
         settings.dedicated_endpoint_id.is_some()
     );
-    let config = oci_config_from_entry(slug, &settings, key, model)
-        .map(|config| with_entry_endpoint(slug, config, entry))
+    let config = entry_oci_config(slug, entry, &settings, key, model, temperature_override)
         .map_err(anyhow::Error::msg)?;
     build_oci_model(config).map_err(|e| {
         log::warn!(

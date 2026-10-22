@@ -5244,7 +5244,7 @@ const messages: TranslationMap = {
     "Instance principal et l'identité de charge de travail OKE nécessitent une version compilée avec la prise en charge des principals OCI.",
   'settings.ai.oci.region': 'Région',
   'settings.ai.oci.compartment': 'OCID du compartiment',
-  'settings.ai.oci.project': 'OCID du projet Generative AI (facultatif)',
+  'settings.ai.oci.project': 'OCID du projet Generative AI',
   'settings.ai.oci.transport': 'Protocole',
   'settings.ai.oci.transport.openai': 'Compatible OpenAI',
   'settings.ai.oci.transport.actions': 'Compatible OpenAI (actions)',
@@ -5254,6 +5254,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'La région est obligatoire (par exemple us-chicago-1).',
   'settings.ai.oci.compartmentRequired':
     'L’OCID du compartiment est requis pour ce protocole et cette méthode de connexion.',
+  'settings.ai.oci.projectRequired':
+    'L’OCID du projet Generative AI est requis pour le protocole compatible OpenAI.',
   'settings.ai.oci.editSettings': 'Modifier les paramètres OCI',
 };
 

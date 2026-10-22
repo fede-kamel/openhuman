@@ -5175,7 +5175,7 @@ const messages: TranslationMap = {
     'Для Instance principal и идентификации рабочей нагрузки OKE нужна сборка с поддержкой принципалов OCI.',
   'settings.ai.oci.region': 'Регион',
   'settings.ai.oci.compartment': 'OCID компартмента',
-  'settings.ai.oci.project': 'OCID проекта Generative AI (необязательно)',
+  'settings.ai.oci.project': 'OCID проекта Generative AI',
   'settings.ai.oci.transport': 'Протокол',
   'settings.ai.oci.transport.openai': 'Совместимый с OpenAI',
   'settings.ai.oci.transport.actions': 'Совместимый с OpenAI (actions)',
@@ -5185,6 +5185,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'Укажите регион (например, us-chicago-1).',
   'settings.ai.oci.compartmentRequired':
     'Для этого протокола и способа входа требуется OCID компартмента.',
+  'settings.ai.oci.projectRequired':
+    'Для протокола, совместимого с OpenAI, требуется OCID проекта Generative AI.',
   'settings.ai.oci.editSettings': 'Изменить настройки OCI',
 };
 

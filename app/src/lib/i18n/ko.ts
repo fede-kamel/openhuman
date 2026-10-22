@@ -5069,7 +5069,7 @@ const messages: TranslationMap = {
     '인스턴스 프린시펄과 OKE 워크로드 ID는 OCI 프린시펄을 지원하는 빌드가 필요합니다.',
   'settings.ai.oci.region': '리전',
   'settings.ai.oci.compartment': '구획 OCID',
-  'settings.ai.oci.project': 'Generative AI 프로젝트 OCID(선택 사항)',
+  'settings.ai.oci.project': 'Generative AI 프로젝트 OCID',
   'settings.ai.oci.transport': '프로토콜',
   'settings.ai.oci.transport.openai': 'OpenAI 호환',
   'settings.ai.oci.transport.actions': 'OpenAI 호환(actions)',
@@ -5078,6 +5078,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.dedicatedEndpoint': '전용 엔드포인트 OCID(선택 사항)',
   'settings.ai.oci.regionRequired': '리전은 필수입니다(예: us-chicago-1).',
   'settings.ai.oci.compartmentRequired': '이 프로토콜과 로그인 방식에는 구획 OCID가 필요합니다.',
+  'settings.ai.oci.projectRequired':
+    'OpenAI 호환 프로토콜에는 Generative AI 프로젝트 OCID가 필요합니다.',
   'settings.ai.oci.editSettings': 'OCI 설정 편집',
 };
 

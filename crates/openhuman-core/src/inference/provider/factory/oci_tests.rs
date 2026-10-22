@@ -28,6 +28,7 @@ fn api_key_settings() -> OciProviderSettings {
     OciProviderSettings {
         auth_mode: OciAuthMode::ApiKey,
         region: Some("us-chicago-1".into()),
+        project_id: Some("ocid1.generativeaiproject.test".into()),
         ..Default::default()
     }
 }
@@ -63,6 +64,7 @@ fn profile_settings(
         config_file: Some(config.display().to_string()),
         profile: Some(profile.into()),
         compartment_id: Some("ocid1.compartment.test".into()),
+        project_id: Some("ocid1.generativeaiproject.test".into()),
         ..Default::default()
     }
 }
@@ -79,7 +81,7 @@ fn api_key_mode_builds_over_each_transport() {
         settings.transport = transport;
         settings.compartment_id = needs_compartment.then(|| "ocid1.compartment.test".to_string());
         let entry = oci_entry(settings);
-        build_oci_chat_model("oci", &entry, "genai-key-not-real", "openai.gpt-5.5")
+        build_oci_chat_model("oci", &entry, "genai-key-not-real", "openai.gpt-5.5", None)
             .unwrap_or_else(|e| panic!("{} must build: {e}", transport.as_str()));
     }
 }
@@ -87,7 +89,7 @@ fn api_key_mode_builds_over_each_transport() {
 #[test]
 fn api_key_mode_without_a_key_names_the_problem() {
     let entry = oci_entry(api_key_settings());
-    let error = build_oci_chat_model("oci", &entry, "  ", "openai.gpt-5.5")
+    let error = build_oci_chat_model("oci", &entry, "  ", "openai.gpt-5.5", None)
         .err()
         .expect("missing key must fail")
         .to_string();
@@ -165,6 +167,48 @@ fn entry_endpoint_overrides_the_region_host() {
 }
 
 #[test]
+fn the_openai_transport_requires_a_project() {
+    for project in [None, Some("  ".to_string())] {
+        let mut settings = api_key_settings();
+        settings.project_id = project;
+        let error = oci_config_from_entry("oci", &settings, "k", "m").unwrap_err();
+        assert!(error.contains("oci.project_id"), "{error}");
+    }
+    let mut settings = api_key_settings();
+    settings.project_id = None;
+    settings.transport = OciTransportKind::NativeGeneric;
+    settings.compartment_id = Some("ocid1.compartment.test".into());
+    oci_config_from_entry("oci", &settings, "k", "m").expect("only /openai/v1 needs a project");
+}
+
+#[test]
+fn the_builtin_preset_endpoint_keeps_the_region_host() {
+    let mut settings = api_key_settings();
+    settings.region = Some("eu-frankfurt-1".into());
+    for endpoint in [
+        "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
+        "https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/",
+    ] {
+        let mut entry = oci_entry(settings.clone());
+        entry.endpoint = endpoint.into();
+        let config = oci_config_from_entry("oci", &settings, "k", "m").unwrap();
+        let config = with_entry_endpoint("oci", config, &entry);
+        assert_eq!(config.endpoint, None, "{endpoint}");
+        assert_eq!(config.region.as_deref(), Some("eu-frankfurt-1"));
+    }
+}
+
+#[test]
+fn the_route_temperature_override_reaches_the_config() {
+    let settings = api_key_settings();
+    let entry = oci_entry(settings.clone());
+    let config = entry_oci_config("oci", &entry, &settings, "k", "m", Some(0.2)).unwrap();
+    assert_eq!(config.temperature_override, Some(0.2));
+    let config = entry_oci_config("oci", &entry, &settings, "k", "m", None).unwrap();
+    assert_eq!(config.temperature_override, None);
+}
+
+#[test]
 fn blank_entry_endpoint_keeps_the_region_host() {
     let mut entry = oci_entry(api_key_settings());
     entry.endpoint = "   ".into();
@@ -176,11 +220,11 @@ fn blank_entry_endpoint_keeps_the_region_host() {
 fn entry_endpoint_override_must_be_https_or_loopback() {
     let mut entry = oci_entry(api_key_settings());
     entry.endpoint = "http://127.0.0.1:18766".into();
-    build_oci_chat_model("oci", &entry, "genai-key-not-real", "openai.gpt-5.5")
+    build_oci_chat_model("oci", &entry, "genai-key-not-real", "openai.gpt-5.5", None)
         .unwrap_or_else(|e| panic!("a loopback capture proxy must build: {e}"));
 
     entry.endpoint = "http://genai.example.com".into();
-    let error = build_oci_chat_model("oci", &entry, "genai-key-not-real", "openai.gpt-5.5")
+    let error = build_oci_chat_model("oci", &entry, "genai-key-not-real", "openai.gpt-5.5", None)
         .err()
         .expect("plain http to a remote host must fail")
         .to_string();
@@ -213,7 +257,7 @@ fn session_token_mode_uses_the_token_file_profile() {
     let built = oci_config_from_entry("oci", &settings, "", "m").unwrap();
     assert!(matches!(built.auth, OciAuth::SessionTokenFile { .. }));
     assert_eq!(built.region.as_deref(), Some("us-ashburn-1"));
-    build_oci_chat_model("oci", &oci_entry(settings), "", "openai.gpt-5.5").expect("builds");
+    build_oci_chat_model("oci", &oci_entry(settings), "", "openai.gpt-5.5", None).expect("builds");
 }
 
 #[test]
@@ -289,6 +333,7 @@ fn principal_modes_are_unsupported_without_the_feature() {
             auth_mode: mode,
             region: Some("us-chicago-1".into()),
             compartment_id: Some("ocid1.compartment.test".into()),
+            project_id: Some("ocid1.generativeaiproject.test".into()),
             ..Default::default()
         };
         let error = oci_config_from_entry("oci", &settings, "", "m").unwrap_err();

@@ -5121,7 +5121,7 @@ const messages: TranslationMap = {
     'Örnek sorumlusu ve OKE iş yükü kimliği, OCI sorumlusu desteği içeren bir derleme gerektirir.',
   'settings.ai.oci.region': 'Bölge',
   'settings.ai.oci.compartment': 'Bölme OCID’si',
-  'settings.ai.oci.project': 'Generative AI proje OCID’si (isteğe bağlı)',
+  'settings.ai.oci.project': 'Generative AI proje OCID’si',
   'settings.ai.oci.transport': 'Protokol',
   'settings.ai.oci.transport.openai': 'OpenAI uyumlu',
   'settings.ai.oci.transport.actions': 'OpenAI uyumlu (actions)',
@@ -5131,6 +5131,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'Bölge gereklidir (örneğin us-chicago-1).',
   'settings.ai.oci.compartmentRequired':
     'Bu protokol ve oturum açma yöntemi için bölme OCID’si gereklidir.',
+  'settings.ai.oci.projectRequired':
+    'OpenAI uyumlu protokol için Generative AI proje OCID’si gereklidir.',
   'settings.ai.oci.editSettings': 'OCI ayarlarını düzenle',
 };
 

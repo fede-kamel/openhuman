@@ -4834,7 +4834,7 @@ const messages: TranslationMap = {
   'settings.ai.oci.principalBuildHint': '实例主体和 OKE 工作负载身份需要支持 OCI 主体的构建版本。',
   'settings.ai.oci.region': '区域',
   'settings.ai.oci.compartment': '隔离区 OCID',
-  'settings.ai.oci.project': 'Generative AI 项目 OCID（可选）',
+  'settings.ai.oci.project': 'Generative AI 项目 OCID',
   'settings.ai.oci.transport': '协议',
   'settings.ai.oci.transport.openai': '兼容 OpenAI',
   'settings.ai.oci.transport.actions': '兼容 OpenAI（actions）',
@@ -4843,6 +4843,7 @@ const messages: TranslationMap = {
   'settings.ai.oci.dedicatedEndpoint': '专用终端节点 OCID（可选）',
   'settings.ai.oci.regionRequired': '区域为必填项（例如 us-chicago-1）。',
   'settings.ai.oci.compartmentRequired': '此协议和登录方式需要区间 OCID。',
+  'settings.ai.oci.projectRequired': 'OpenAI 兼容协议需要 Generative AI 项目 OCID。',
   'settings.ai.oci.editSettings': '编辑 OCI 设置',
 };
 

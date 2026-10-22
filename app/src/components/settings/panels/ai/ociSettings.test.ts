@@ -10,6 +10,7 @@ import {
   normalizeOciSettings,
   OCI_AUTH_MODE_OPTIONS,
   OCI_TRANSPORT_OPTIONS,
+  ociEndpointOverride,
   ociSettingsSummary,
   validateOciSettings,
 } from './ociSettings';
@@ -17,6 +18,7 @@ import {
 const settings = (patch: Partial<OciSettings> = {}): OciSettings => ({
   ...DEFAULT_OCI_SETTINGS,
   region: 'us-chicago-1',
+  project_id: 'ocid1.generativeaiproject.x',
   ...patch,
 });
 
@@ -65,6 +67,37 @@ describe('validateOciSettings', () => {
         false
       )
     ).toBeNull();
+  });
+});
+
+describe('validateOciSettings project', () => {
+  it('requires a project only on the openai transport', () => {
+    expect(validateOciSettings(settings({ project_id: '  ' }), 'key', false)).toBe(
+      'settings.ai.oci.projectRequired'
+    );
+    expect(
+      validateOciSettings(
+        settings({ transport: 'actions', project_id: '', compartment_id: 'ocid1.compartment.x' }),
+        'key',
+        false
+      )
+    ).toBeNull();
+  });
+});
+
+describe('ociEndpointOverride', () => {
+  it('blanks the preset display URL so the core routes by region', () => {
+    expect(ociEndpointOverride(undefined)).toBe('');
+    expect(ociEndpointOverride('  ')).toBe('');
+    expect(
+      ociEndpointOverride('https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/')
+    ).toBe('');
+  });
+
+  it('keeps an explicit override', () => {
+    expect(ociEndpointOverride(' https://genai.private.example.oraclecloud.com ')).toBe(
+      'https://genai.private.example.oraclecloud.com'
+    );
   });
 });
 

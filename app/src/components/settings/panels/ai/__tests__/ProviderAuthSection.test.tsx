@@ -163,6 +163,43 @@ describe('ProviderAuthSection connected rows', () => {
     expect(await screen.findByTestId('oci-auth-mode')).toHaveValue('session_token');
   });
 
+  it('edits a custom OCI slug through the OCI dialog, not the generic editor', async () => {
+    const onEditCustomProvider = vi.fn();
+    const onConnectProvider = vi.fn().mockResolvedValue(undefined);
+    renderSection('header.payload.signature', {
+      onEditCustomProvider,
+      onConnectProvider,
+      draft: {
+        ...EMPTY_SETTINGS,
+        cloudProviders: [
+          provider({
+            id: 'p_oci-cohere',
+            slug: 'oci-cohere',
+            label: 'OCI Cohere',
+            endpoint: '',
+            authStyle: 'oci',
+            maskedKey: 'Not configured',
+            oci: {
+              auth_mode: 'config_profile',
+              transport: 'native_cohere',
+              region: 'eu-frankfurt-1',
+              compartment_id: 'ocid1.compartment.oc1..example',
+            },
+          }),
+        ],
+      },
+    });
+
+    expect(screen.getByTestId('provider-row-oci-cohere')).toHaveTextContent(
+      'eu-frankfurt-1 · OCI config profile'
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /OCI Cohere/ }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
+    expect(onEditCustomProvider).not.toHaveBeenCalled();
+    expect(await screen.findByTestId('oci-auth-mode')).toHaveValue('config_profile');
+  });
+
   it('renders a user-defined custom provider by host, with edit and remove', () => {
     renderSection('header.payload.signature', {
       draft: {

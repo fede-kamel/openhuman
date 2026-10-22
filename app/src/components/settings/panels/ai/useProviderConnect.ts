@@ -33,6 +33,7 @@ import {
   maskKeyLabel,
   toWireCloudProvider,
 } from './aiPanelTypes';
+import { ociEndpointOverride } from './ociSettings';
 
 const normalizeProviderSlug = (slug: string) => slug.trim().toLowerCase();
 const isProviderSlug = (candidate: string, slug: string) =>
@@ -172,13 +173,21 @@ export function useProviderConnect({
         const initialSavedProvider = initialSettings.saved.cloudProviders.find(provider =>
           isProviderSlug(provider.slug, slug)
         );
+        const existingProvider = initialProvider ?? initialSavedProvider;
         const upserted: CloudProvider = {
           id: `p_${slug}_${Math.random().toString(36).slice(2, 7)}`,
           slug,
-          label: localLabel ?? BUILTIN_PROVIDER_META[slug]?.label ?? slug,
-          endpoint,
+          label:
+            localLabel ??
+            BUILTIN_PROVIDER_META[slug]?.label ??
+            (isOci ? existingProvider?.label : undefined) ??
+            slug,
+          // OCI routes by region: keep only an explicit endpoint override, so
+          // the preset's display URL never pins every region to Chicago.
+          endpoint: isOci ? ociEndpointOverride(existingProvider?.endpoint) : endpoint,
           caCertPem: initialProvider?.caCertPem ?? initialSavedProvider?.caCertPem,
-          authStyle: authStyleForSlug(slug),
+          // Custom OCI slugs (e.g. `oci-cohere`) are not built-in presets.
+          authStyle: isOci ? 'oci' : authStyleForSlug(slug),
           // CLI-login providers hold no API key — reflect that honestly.
           maskedKey: maskKeyLabel(isOci ? ociKeepsKey : !isCliLogin),
           ...(isOci && oci ? { oci } : {}),
@@ -241,10 +250,17 @@ export function useProviderConnect({
                 if (trimmed) await setCloudProviderKey(slug, trimmed);
               } else {
                 // Profile / principal modes hold no secret; drop any key left
-                // over from an earlier api_key configuration.
-                await clearCloudProviderKey(slug).catch(clearErr =>
-                  console.warn(`[ai-settings] clearing stale oci key failed slug=${slug}`, clearErr)
-                );
+                // over from an earlier api_key configuration. A failed delete
+                // aborts the switch (the catch below restores the previous
+                // providers) rather than saving a keyless mode over a key
+                // that is still stored.
+                await clearCloudProviderKey(slug).catch(clearErr => {
+                  console.warn(
+                    `[ai-settings] clearing stale oci key failed slug=${slug}`,
+                    clearErr
+                  );
+                  throw clearErr;
+                });
               }
             } else if (!isLocalRuntime && !isCodexOAuth && !isCliLogin) {
               await setCloudProviderKey(slug, trimmed);

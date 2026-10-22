@@ -5021,7 +5021,7 @@ const messages: TranslationMap = {
     'يتطلب Instance principal وهوية حمل عمل OKE إصدارًا يدعم OCI principals.',
   'settings.ai.oci.region': 'المنطقة',
   'settings.ai.oci.compartment': 'معرّف OCID للحجرة',
-  'settings.ai.oci.project': 'معرّف OCID لمشروع Generative AI (اختياري)',
+  'settings.ai.oci.project': 'معرّف OCID لمشروع Generative AI',
   'settings.ai.oci.transport': 'البروتوكول',
   'settings.ai.oci.transport.openai': 'متوافق مع OpenAI',
   'settings.ai.oci.transport.actions': 'متوافق مع OpenAI (actions)',
@@ -5031,6 +5031,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'المنطقة مطلوبة (مثل us-chicago-1).',
   'settings.ai.oci.compartmentRequired':
     'معرّف OCID للحجيرة مطلوب لهذا البروتوكول وطريقة تسجيل الدخول هذه.',
+  'settings.ai.oci.projectRequired':
+    'معرّف OCID لمشروع Generative AI مطلوب للبروتوكول المتوافق مع OpenAI.',
   'settings.ai.oci.editSettings': 'تعديل إعدادات OCI',
 };
 

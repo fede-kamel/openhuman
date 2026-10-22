@@ -5475,7 +5475,7 @@ const messages: TranslationMap = {
     'インスタンスプリンシパルと OKE ワークロードアイデンティティには、OCI プリンシパル対応のビルドが必要です。',
   'settings.ai.oci.region': 'リージョン',
   'settings.ai.oci.compartment': 'コンパートメント OCID',
-  'settings.ai.oci.project': 'Generative AI プロジェクト OCID（任意）',
+  'settings.ai.oci.project': 'Generative AI プロジェクト OCID',
   'settings.ai.oci.transport': 'プロトコル',
   'settings.ai.oci.transport.openai': 'OpenAI 互換',
   'settings.ai.oci.transport.actions': 'OpenAI 互換（actions）',
@@ -5485,6 +5485,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'リージョンは必須です（例: us-chicago-1）。',
   'settings.ai.oci.compartmentRequired':
     'このプロトコルとサインイン方法にはコンパートメント OCID が必要です。',
+  'settings.ai.oci.projectRequired':
+    'OpenAI 互換プロトコルには Generative AI プロジェクト OCID が必要です。',
   'settings.ai.oci.editSettings': 'OCI 設定を編集',
 };
 

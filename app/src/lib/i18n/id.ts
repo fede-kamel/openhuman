@@ -5163,7 +5163,7 @@ const messages: TranslationMap = {
     'Instance principal dan identitas workload OKE memerlukan build dengan dukungan principal OCI.',
   'settings.ai.oci.region': 'Region',
   'settings.ai.oci.compartment': 'OCID compartment',
-  'settings.ai.oci.project': 'OCID proyek Generative AI (opsional)',
+  'settings.ai.oci.project': 'OCID proyek Generative AI',
   'settings.ai.oci.transport': 'Protokol',
   'settings.ai.oci.transport.openai': 'Kompatibel dengan OpenAI',
   'settings.ai.oci.transport.actions': 'Kompatibel dengan OpenAI (actions)',
@@ -5173,6 +5173,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'Region wajib diisi (misalnya us-chicago-1).',
   'settings.ai.oci.compartmentRequired':
     'OCID compartment wajib diisi untuk protokol dan metode masuk ini.',
+  'settings.ai.oci.projectRequired':
+    'OCID proyek Generative AI wajib diisi untuk protokol yang kompatibel dengan OpenAI.',
   'settings.ai.oci.editSettings': 'Edit pengaturan OCI',
 };
 

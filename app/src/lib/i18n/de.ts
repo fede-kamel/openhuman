@@ -5269,7 +5269,7 @@ const messages: TranslationMap = {
     'Instance Principal und OKE-Workload-Identität erfordern einen Build mit Unterstützung für OCI-Principals.',
   'settings.ai.oci.region': 'Region',
   'settings.ai.oci.compartment': 'Compartment-OCID',
-  'settings.ai.oci.project': 'OCID des Generative-AI-Projekts (optional)',
+  'settings.ai.oci.project': 'OCID des Generative-AI-Projekts',
   'settings.ai.oci.transport': 'Protokoll',
   'settings.ai.oci.transport.openai': 'OpenAI-kompatibel',
   'settings.ai.oci.transport.actions': 'OpenAI-kompatibel (Actions)',
@@ -5279,6 +5279,8 @@ const messages: TranslationMap = {
   'settings.ai.oci.regionRequired': 'Region ist erforderlich (zum Beispiel us-chicago-1).',
   'settings.ai.oci.compartmentRequired':
     'Für dieses Protokoll und diese Anmeldemethode ist eine Compartment-OCID erforderlich.',
+  'settings.ai.oci.projectRequired':
+    'Für das OpenAI-kompatible Protokoll ist die OCID des Generative-AI-Projekts erforderlich.',
   'settings.ai.oci.editSettings': 'OCI-Einstellungen bearbeiten',
 };
 
