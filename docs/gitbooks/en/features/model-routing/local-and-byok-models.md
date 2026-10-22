@@ -52,17 +52,17 @@ ollama pull moondream:1.8b-v2-q4_K_S   # vision, small
 
 A text-only model on Ollama still accepts an image request. It silently drops the image and answers from the prompt text alone, which reads as a confident but invented description. OpenHuman refuses to route a vision request to a chat-only model, but it helps to know which is which.
 
-| Model                      | Size     | Chat    | Vision  | Embeddings                         |
-| -------------------------- | -------- | ------- | ------- | ---------------------------------- |
-| `gemma3:270m-it-qat`       | 0.2 GB   | Yes     | No      | No                                 |
-| `gemma3:1b-it-qat`         | 1.0 GB   | Yes     | No      | No                                 |
-| `gemma3:4b-it-qat`         | 4.0 GB   | Yes     | Yes     | No                                 |
-| `gemma3n:e4b-it-q8_0`      | 9.5 GB   | Yes     | No      | No                                 |
-| `gemma4:e4b-it-q8_0`       | 11.6 GB  | Yes     | Yes     | No                                 |
-| `moondream:1.8b-v2-q4_K_S` | 1.7 GB   | Minimal | Yes     | No                                 |
-| `llava:7b`                 | 4.7 GB   | Minimal | Yes     | No                                 |
-| `bge-m3`                   | 1.2 GB   | No      | No      | Yes, 1024 dimensions               |
-| `all-minilm:latest`        | 0.05 GB  | No      | No      | 384 dimensions                     |
+| Model                      | Size    | Chat    | Vision | Embeddings           |
+| -------------------------- | ------- | ------- | ------ | -------------------- |
+| `gemma3:270m-it-qat`       | 0.2 GB  | Yes     | No     | No                   |
+| `gemma3:1b-it-qat`         | 1.0 GB  | Yes     | No     | No                   |
+| `gemma3:4b-it-qat`         | 4.0 GB  | Yes     | Yes    | No                   |
+| `gemma3n:e4b-it-q8_0`      | 9.5 GB  | Yes     | No     | No                   |
+| `gemma4:e4b-it-q8_0`       | 11.6 GB | Yes     | Yes    | No                   |
+| `moondream:1.8b-v2-q4_K_S` | 1.7 GB  | Minimal | Yes    | No                   |
+| `llava:7b`                 | 4.7 GB  | Minimal | Yes    | No                   |
+| `bge-m3`                   | 1.2 GB  | No      | No     | Yes, 1024 dimensions |
+| `all-minilm:latest`        | 0.05 GB | No      | No     | 384 dimensions       |
 
 Two traps:
 
@@ -126,7 +126,9 @@ BYOK keeps the routing, memory, tools and agent harness exactly as they are, and
 
 Add your key in the desktop app under the LLM settings. It is stored in the OS keyring, not in plain config. OpenHuman ships presets for these slugs, so you don't need to supply an endpoint:
 
-`openai`, `anthropic`, `google`, `openrouter`, `orcarouter`, `groq`, `mistral`, `deepseek`, `together`, `fireworks`, `cerebras`, `xai`, `moonshot`, `gmi`, `huggingface`, `nvidia`, `zai`, `minimax`, `stepfun`, `kilocode`, `deepinfra`, `novita`, `venice`, `vercel-ai-gateway`, `sumopod`, `modelscope`, `oci` (see [OCI Generative AI](#oci-generative-ai))
+`openai`, `anthropic`, `google`, `openrouter`, `orcarouter`, `groq`, `mistral`, `deepseek`, `together`, `fireworks`, `cerebras`, `xai`, `moonshot`, `gmi`, `huggingface`, `nvidia`, `zai`, `minimax`, `stepfun`, `kilocode`, `deepinfra`, `novita`, `venice`, `vercel-ai-gateway`, `sumopod`, `modelscope`
+
+`oci` is also built in, but it needs more than a key: its host follows the region you pick, and most of its sign-in methods store no key at all. See [OCI Generative AI](#oci-generative-ai).
 
 Anything else that speaks the OpenAI-compatible API also works. Register it with your own slug and endpoint, and it routes the same way.
 
@@ -168,14 +170,14 @@ Everything except the optional API key is plain settings in `config.toml`. Key m
 
 `transport` selects the wire protocol:
 
-| `transport`        | Endpoint                                                                          | Needs `compartment_id`                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `openai` (default) | `/openai/v1`, Chat Completions                                                    | Yes, unless `auth_mode = "api_key"`. Set `project_id` (sent as `OpenAI-Project`) to the Generative AI project. |
-| `actions`          | `/20231130/actions/v1`, Chat Completions                                          | Yes                                                                                                            |
-| `native_generic`   | `/20231130/actions/chat`, `apiFormat: GENERIC` (Meta, xAI, Google, OpenAI-family) | Yes                                                                                                            |
-| `native_cohere`    | `/20231130/actions/chat`, `apiFormat: COHERE` (Cohere Command)                    | Yes                                                                                                            |
+| `transport`        | Endpoint                                                                          | Required settings                                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `openai` (default) | `/openai/v1`, Chat Completions                                                    | `project_id`, the Generative AI project OCID (sent as `OpenAI-Project`). `compartment_id` too, unless `auth_mode = "api_key"`. |
+| `actions`          | `/20231130/actions/v1`, Chat Completions                                          | `compartment_id`                                                                                                               |
+| `native_generic`   | `/20231130/actions/chat`, `apiFormat: GENERIC` (Meta, xAI, Google, OpenAI-family) | `compartment_id`                                                                                                               |
+| `native_cohere`    | `/20231130/actions/chat`, `apiFormat: COHERE` (Cohere Command)                    | `compartment_id`                                                                                                               |
 
-Set `dedicated_endpoint_id` to address a dedicated AI cluster endpoint instead of an on-demand model.
+Set `dedicated_endpoint_id` to address a dedicated AI cluster endpoint instead of an on-demand model. The service host comes from `region`. Leave the entry's `endpoint` blank unless you need a different host, such as another realm or a private endpoint; a non-blank `endpoint` replaces the region-derived host.
 
 ```toml
 # API key (stored in the keyring from the settings panel)
@@ -186,6 +188,7 @@ auth_style = "oci"
 [cloud_providers.oci]
 auth_mode = "api_key"
 region = "us-chicago-1"
+project_id = "ocid1.generativeaiproject.oc1..<your-project>"
 transport = "openai"
 
 # API-signing-key profile, native Cohere chat
@@ -222,13 +225,15 @@ project_id = "ocid1.generativeaiproject.oc1..<your-project>"
 transport = "openai"
 ```
 
+Workload routes are top-level keys. Put them at the top of `config.toml`, above the first `[[cloud_providers]]` header: below it, TOML reads them as part of the last `[cloud_providers.oci]` table and they route nothing.
+
 ```toml
+# Top of config.toml, before any [[cloud_providers]] table
 chat_provider = "oci:openai.gpt-5.5"
 reasoning_provider = "oci-cohere:cohere.command-a-03-2025"
 ```
 
-Errors name the missing field (`oci.region`, `oci.compartment_id`) or the mismatch (a session-token profile used with `config_profile`). The model dropdown cannot list OCI models, so type the model id.
-
+Errors name the missing field (`oci.region`, `oci.compartment_id`, `oci.project_id`) or the mismatch (a session-token profile used with `config_profile`). The model dropdown cannot list OCI models, so type the model id.
 
 ## Mixing routes
 
