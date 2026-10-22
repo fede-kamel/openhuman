@@ -448,7 +448,7 @@ pub(super) fn try_create_cloud_slug_chat_model_from_string_with_native_tools_for
     )
 }
 
-fn try_create_cloud_slug_chat_model_from_string_with_native_tools_and_access(
+pub(super) fn try_create_cloud_slug_chat_model_from_string_with_native_tools_and_access(
     role: &str,
     provider: &str,
     config: &Config,
@@ -571,7 +571,17 @@ fn try_create_cloud_slug_chat_model_from_string_with_native_tools_and_access(
                     &effective_model,
                     temperature_override,
                 )
-                .map(|chat| (chat, effective_model.clone())),
+                .map(|(chat, endpoint)| {
+                    if let Some(identity) = inspection_identity {
+                        *identity = Some((
+                            endpoint,
+                            key.clone(),
+                            effective_model.clone(),
+                            InspectionOutputBudgetCapability::Bounded,
+                        ));
+                    }
+                    (chat, effective_model.clone())
+                }),
             );
         }
         style
