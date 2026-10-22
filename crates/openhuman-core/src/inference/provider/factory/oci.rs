@@ -43,12 +43,21 @@ fn non_empty(value: &Option<String>) -> Option<String> {
         .map(str::to_string)
 }
 
-/// Expands a leading `~` / `~/` using `$HOME`.
+/// Expands a leading `~`, `~/` or `~\` from `$HOME`, or `%USERPROFILE%` on
+/// Windows, where `HOME` is usually unset. (Core code does not call
+/// `dirs::home_dir()`: see `scripts/ci/check-saas-ambient.mjs`.)
 fn expand_home(path: &str) -> PathBuf {
-    let home = std::env::var_os("HOME").map(PathBuf::from);
-    match (path.strip_prefix("~/"), home) {
+    let rest = path
+        .strip_prefix("~/")
+        .or_else(|| path.strip_prefix("~\\"))
+        .or((path == "~").then_some(""));
+    let home = std::env::var_os("HOME")
+        .filter(|home| !home.is_empty())
+        .or_else(|| std::env::var_os("USERPROFILE").filter(|home| !home.is_empty()))
+        .map(PathBuf::from);
+    match (rest, home) {
+        (Some(""), Some(home)) => home,
         (Some(rest), Some(home)) => home.join(rest),
-        (None, Some(home)) if path == "~" => home,
         _ => PathBuf::from(path),
     }
 }
@@ -241,7 +250,8 @@ fn entry_oci_config(
     Ok(config)
 }
 
-/// Builds the OCI chat model for a resolved `oci` cloud slug.
+/// Builds the OCI chat model for a resolved `oci` cloud slug, with the
+/// service endpoint it calls (reported as the route's wire identity).
 /// `temperature_override` is the route's `@<temperature>` suffix, which wins
 /// over the request's temperature as on every other cloud slug.
 pub(super) fn build_oci_chat_model(
@@ -250,7 +260,7 @@ pub(super) fn build_oci_chat_model(
     key: &str,
     model: &str,
     temperature_override: Option<f64>,
-) -> anyhow::Result<Arc<dyn ChatModel<()>>> {
+) -> anyhow::Result<(Arc<dyn ChatModel<()>>, String)> {
     let settings = entry.oci.clone().unwrap_or_default();
     log::debug!(
         "[providers][oci] building slug={slug} model={model} auth_mode={} transport={} dedicated={}",
@@ -260,18 +270,23 @@ pub(super) fn build_oci_chat_model(
     );
     let config = entry_oci_config(slug, entry, &settings, key, model, temperature_override)
         .map_err(anyhow::Error::msg)?;
-    build_oci_model(config).map_err(|e| {
-        log::warn!(
-            "[providers][oci] build failed slug={slug} auth_mode={} transport={}",
-            settings.auth_mode.as_str(),
-            settings.transport.as_str()
-        );
-        anyhow::anyhow!(
-            "[chat-factory] OCI provider '{slug}' (auth_mode={}, transport={}): {e}",
-            settings.auth_mode.as_str(),
-            settings.transport.as_str()
-        )
-    })
+    let endpoint = config
+        .service_endpoint()
+        .map_err(|e| anyhow::anyhow!("[chat-factory] OCI provider '{slug}': {e}"))?;
+    build_oci_model(config)
+        .map(|chat| (chat, endpoint))
+        .map_err(|e| {
+            log::warn!(
+                "[providers][oci] build failed slug={slug} auth_mode={} transport={}",
+                settings.auth_mode.as_str(),
+                settings.transport.as_str()
+            );
+            anyhow::anyhow!(
+                "[chat-factory] OCI provider '{slug}' (auth_mode={}, transport={}): {e}",
+                settings.auth_mode.as_str(),
+                settings.transport.as_str()
+            )
+        })
 }
 
 #[cfg(test)]

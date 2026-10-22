@@ -608,7 +608,17 @@ pub(super) async fn try_create_cloud_slug_chat_model_from_string_with_native_too
                     &effective_model,
                     temperature_override,
                 )
-                .map(|chat| (chat, effective_model.clone())),
+                .map(|(chat, endpoint)| {
+                    if let Some(identity) = inspection_identity {
+                        *identity = Some((
+                            endpoint,
+                            key.clone(),
+                            effective_model.clone(),
+                            InspectionOutputBudgetCapability::Bounded,
+                        ));
+                    }
+                    (chat, effective_model.clone())
+                }),
             );
         }
         style

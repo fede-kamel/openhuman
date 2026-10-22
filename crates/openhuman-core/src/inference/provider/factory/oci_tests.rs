@@ -411,3 +411,58 @@ fn oci_slug_with_a_missing_compartment_fails_through_the_factory() {
         };
     assert!(error.contains("oci.compartment_id"), "{error}");
 }
+
+#[test]
+fn inspection_records_the_oci_wire_identity() {
+    let _guard = crate::inference::inference_test_guard();
+    let (_dir, config_file) = oci_dir();
+    let mut config = Config::default();
+    config.cloud_providers.push(oci_entry(profile_settings(
+        OciAuthMode::SessionToken,
+        &config_file,
+        "SESSION",
+    )));
+    let mut identity = None;
+    super::super::cloud_slug::try_create_cloud_slug_chat_model_from_string_with_native_tools_and_access(
+        "chat",
+        "oci:cohere.command-a-03-2025",
+        &config,
+        true,
+        &crate::security::egress::EgressLedger::none(),
+        None,
+        super::super::credentials::CredentialAccess::Inspection,
+        Some(&mut identity),
+    )
+    .expect("oci slug is a configured cloud provider")
+    .expect("model builds from a session-token profile");
+    let (endpoint, credential, model, _) = identity.expect("the OCI route records its identity");
+    // The preset URL on the entry is ignored; the host follows the region.
+    assert_eq!(
+        endpoint,
+        "https://inference.generativeai.us-ashburn-1.oci.oraclecloud.com"
+    );
+    assert!(
+        credential.is_empty(),
+        "a session-token profile stores no key"
+    );
+    assert_eq!(model, "cohere.command-a-03-2025");
+}
+
+#[test]
+fn home_relative_config_paths_expand_to_the_home_directory() {
+    let Some(home) = std::env::var_os("HOME")
+        .filter(|home| !home.is_empty())
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(PathBuf::from)
+    else {
+        return;
+    };
+    assert_eq!(expand_home("~"), home);
+    assert_eq!(expand_home("~/.oci/config"), home.join(".oci/config"));
+    assert_eq!(expand_home("~\\.oci\\config"), home.join(".oci\\config"));
+    assert_eq!(
+        expand_home("/etc/oci/config"),
+        PathBuf::from("/etc/oci/config")
+    );
+    assert_eq!(expand_home("~user/config"), PathBuf::from("~user/config"));
+}
