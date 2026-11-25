@@ -1,0 +1,11 @@
+# tinyinference#122 — full verification suite (fmt, clippy -D warnings, build, test, doc)
+
+BUILD_OK
+CLIPPY_OK
+DOC_OK
+FMT_OK
+TEST_OK
+
+Test totals:
+  passed 1633 failed 0 ignored 1
+  OCI provider tests: 87 passed

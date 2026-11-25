@@ -1,0 +1,11 @@
+OpenHuman agent → OCI Generative AI
+provider oci · auth config_profile (DEMO) · transport native_generic · route oci:meta.llama-3.3-70b-instruct
+
+you ▸ What's the weather in Paris?
+[iteration 1]
+tool ▸ get_weather({"city":"Paris"})
+tool ◂ get_weather success=true 626ms → {"sky":"cloudy","temperature_c":17}
+[iteration 2]
+agent ▸ It is 17°C and cloudy in Paris right now, according to get_weather.
+
+✔ turn finished reply: "It is 17°C and cloudy in Paris right now, according to get_weather."

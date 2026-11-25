@@ -1,0 +1,28 @@
+OCI Generative AI provider · offline end-to-end demo
+stand-in service at http://127.0.0.1:37179 · model meta.llama-3.3-70b-instruct · throwaway 2048-bit RSA key
+
+1. Plain completion (unary)
+    [oci service] POST /20231130/actions/chat · signature verified · body sha256 ok · signed headers [(request-target) date host x-content-sha256 content-type content-length]
+    model ▸ pong
+    ✔ PASS text "pong", usage in=42 out=9 total=51, finish=Some("stop")
+
+2. Streamed completion (server-sent events)
+    [oci service] POST /20231130/actions/chat · signature verified · body sha256 ok · signed headers [(request-target) date host x-content-sha256 content-type content-length]
+    model ▸ 1, 2, 3, 4, 5
+    ✔ PASS reassembled "1, 2, 3, 4, 5", finish=Some("stop"), usage reported
+
+3. Streamed tool call → local tool → final answer
+    [oci service] POST /20231130/actions/chat · signature verified · body sha256 ok · signed headers [(request-target) date host x-content-sha256 content-type content-length]
+    tool-call fragment id="call_7f3a" name="get_weather" args+="{\"city\":"
+    tool-call fragment id="call_7f3a" name="get_weather" args+=" \"Paris\"}"
+    assembled call call_7f3a get_weather({"city":"Paris"})
+    running get_weather locally → {"temperature_c": 17, "sky": "cloudy"}
+    [oci service] POST /20231130/actions/chat · signature verified · body sha256 ok · signed headers [(request-target) date host x-content-sha256 content-type content-length]
+    model ▸ It is 17°C and cloudy in Paris right now.
+    ✔ PASS call id kept across fragments, args {"city":"Paris"}, answer uses the tool result
+
+4. Request signed with the wrong key is rejected
+    [oci service] POST /20231130/actions/chat · rejected: RSA-SHA256 signature does not verify
+    ✔ PASS provider surfaced the rejection: model error: oci returned HTTP 401 (NotAuthenticated): oci returned HTTP 401: The required information to complete authentication was not provided or was incorrect.
+
+4/4 checks passed

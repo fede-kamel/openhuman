@@ -1,0 +1,43 @@
+OCI Generative AI stand-in on http://127.0.0.1:18443
+accepting keyId ocid1.tenancy.oc1..demotenancy/ocid1.user.oc1..demouser/b8:a0:8f:8c:ef:73:35:3d:36:0c:53:2b:20:a9:de:72
+ready
+
+→ #1 POST /20231130/actions/chat (820 bytes)
+  ✔ signature verified keyId=ocid1.tenancy.oc1..demotenancy/ocid1.user.oc1..demouser/b8:a0:8f:8c:ef:73:35:3d:36:0c:53:2b:20:a9:de:72
+  ✔ body sha256 + length match signed: (request-target) date host x-content-sha256 content-type content-length
+  compartmentId ocid1.compartment.oc1..democompartment
+  servingMode   ON_DEMAND meta.llama-3.3-70b-instruct
+  apiFormat     GENERIC · isStream=true · messages [SYSTEM, USER]
+  tools         get_weather
+  last USER   "Current Date & Time: 2026-11-25 19:13:14 Etc/UTC (+00:00, UTC+00:00), Wednesday What's the weather i…"
+  ← 200 text/event-stream · tool call get_weather({"city":"Paris"}) id=call_7f3a
+    sse ▸ data: {"index":0,"message":{"role":"ASSISTANT","toolCalls":[{"arguments":"{\"city\":","id":"call_7f3a","name":"get_weather","type":"FUNCTION"}]}}
+    sse ▸ data: {"index":0,"message":{"role":"ASSISTANT","toolCalls":[{"arguments":"\"Paris\"}","type":"FUNCTION"}]}}
+    sse ▸ data: {"finishReason":"tool_calls","index":0}
+    sse ▸ data: {"usage":{"completionTokens":18,"promptTokens":1200,"totalTokens":1218}}
+    sse ▸ data: [DONE]
+
+→ #2 POST /20231130/actions/chat (1068 bytes)
+  ✔ signature verified keyId=ocid1.tenancy.oc1..demotenancy/ocid1.user.oc1..demouser/b8:a0:8f:8c:ef:73:35:3d:36:0c:53:2b:20:a9:de:72
+  ✔ body sha256 + length match signed: (request-target) date host x-content-sha256 content-type content-length
+  compartmentId ocid1.compartment.oc1..democompartment
+  servingMode   ON_DEMAND meta.llama-3.3-70b-instruct
+  apiFormat     GENERIC · isStream=true · messages [SYSTEM, USER, ASSISTANT, TOOL]
+  tools         get_weather
+  last TOOL   "{\"sky\":\"cloudy\",\"temperature_c\":17}"
+  ← 200 text/event-stream · text "It is 17°C and cloudy in Paris right now, according to get_weather."
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"It ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"is ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"17°C ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"and ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"cloudy ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"in ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"Paris ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"right ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"now, ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"according ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"to ","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"index":0,"message":{"content":[{"text":"get_weather.","type":"TEXT"}],"role":"ASSISTANT"}}
+    sse ▸ data: {"finishReason":"stop","index":0}
+    sse ▸ data: {"usage":{"completionTokens":18,"promptTokens":1200,"totalTokens":1218}}
+    sse ▸ data: [DONE]

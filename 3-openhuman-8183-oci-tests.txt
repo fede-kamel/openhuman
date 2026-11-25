@@ -1,0 +1,42 @@
+# openhuman#8183 rebased on current main (branch fede-kamel/openhuman:oci-genai-rebased) — OCI tests
+# vendor/tinyagents/vendor/tinyinference checked out at tinyinference#122 head (b9b6830)
+
+test config::schema::cloud_providers::tests::auth_style_parse_accepts_oci_and_the_existing_styles ... ok
+test config::schema::cloud_providers::tests::auth_style_parse_error_lists_oci_among_the_valid_values ... ok
+test config::schema::oci_settings::tests::defaults_are_api_key_over_openai ... ok
+test config::schema::oci_settings::tests::only_profile_modes_read_the_config_file ... ok
+test config::schema::oci_settings::tests::legacy_entries_without_oci_deserialize_to_none ... ok
+test config::schema::cloud_providers::tests::oci_provider_entry_survives_the_rpc_payload_shape ... ok
+test inference::provider::factory::cloud_spec::tests::oci_has_no_compatible_registry_auth_style ... ok
+test config::schema::oci_settings::tests::wire_names_round_trip_for_every_variant ... ok
+test config::schema::cloud_providers::tests::documented_toml_oci_entries_deserialize ... ok
+test config::schema::oci_settings::tests::provider_entry_round_trips_with_oci_settings ... ok
+test config::schema::cloud_providers::tests::oci_builtin_preset_maps_to_the_oci_auth_style ... ok
+test inference::provider::factory::oci::tests::api_key_mode_requires_a_region ... ok
+test inference::provider::factory::oci::tests::blank_entry_endpoint_keeps_the_region_host ... ok
+test inference::provider::factory::oci::tests::api_key_mode_without_a_key_names_the_problem ... ok
+test inference::provider::factory::oci::tests::entry_endpoint_overrides_the_region_host ... ok
+test inference::provider::factory::oci::tests::home_relative_config_paths_expand_to_the_home_directory ... ok
+test inference::provider::factory::oci::tests::errors_never_contain_key_material ... ok
+test inference::provider::factory::oci::tests::explicit_region_overrides_the_profile_region ... ok
+test inference::provider::factory::oci::tests::config_profile_reads_the_profile_and_inherits_its_region ... ok
+test inference::provider::factory::oci::tests::native_and_actions_transports_require_a_compartment ... ok
+test inference::provider::factory::oci::tests::missing_profile_and_missing_file_are_reported_with_the_provider_slug ... ok
+test inference::provider::factory::oci::tests::principal_modes_are_unsupported_without_the_feature ... ok
+test inference::provider::factory::oci::tests::project_and_dedicated_endpoint_are_carried_into_the_config ... ok
+test config::ops::tests::loader_and_search_tests::client_config_json_exposes_oci_settings_only_on_oci_entries ... ok
+test inference::provider::factory::oci::tests::profile_kind_must_match_the_auth_mode ... ok
+test inference::provider::factory::oci::tests::stored_key_is_required_only_for_api_key_mode ... ok
+test inference::provider::factory::oci::tests::the_builtin_preset_endpoint_keeps_the_region_host ... ok
+test inference::provider::factory::oci::tests::signed_auth_on_the_openai_transport_requires_a_compartment ... ok
+test inference::provider::factory::oci::tests::the_openai_transport_requires_a_project ... ok
+test inference::provider::factory::oci::tests::the_route_temperature_override_reaches_the_config ... ok
+test inference::provider::factory::routing::routing_tests::keyless_oci_routes_count_as_usable_credentials ... ok
+test inference::provider::models::catalog_listing_tests::oci_entries_answer_with_an_empty_catalog_without_a_network_request ... ok
+test inference::provider::factory::oci::tests::entry_endpoint_override_must_be_https_or_loopback ... ok
+test inference::provider::factory::oci::tests::inspection_records_the_oci_wire_identity ... ok
+test inference::provider::factory::oci::tests::session_token_mode_uses_the_token_file_profile ... ok
+test inference::provider::factory::oci::tests::oci_slug_routes_through_the_cloud_slug_factory ... ok
+test inference::provider::factory::oci::tests::oci_slug_with_a_missing_compartment_fails_through_the_factory ... ok
+test inference::provider::factory::oci::tests::api_key_mode_builds_over_each_transport ... ok
+test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 10833 filtered out; finished in 0.06s
