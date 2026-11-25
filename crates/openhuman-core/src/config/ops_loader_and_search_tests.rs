@@ -394,8 +394,8 @@ async fn snapshot_config_json_redacts_the_inbound_queue_url_credentials() {
     );
 }
 
-#[test]
-fn client_config_json_exposes_oci_settings_only_on_oci_entries() {
+#[tokio::test]
+async fn client_config_json_exposes_oci_settings_only_on_oci_entries() {
     use crate::config::schema::cloud_providers::{
         AuthStyle, CloudProviderCreds, OciAuthMode, OciProviderSettings,
     };
@@ -418,7 +418,7 @@ fn client_config_json_exposes_oci_settings_only_on_oci_entries() {
             ..Default::default()
         },
     ];
-    let value = client_config_json(&cfg);
+    let value = client_config_json(&cfg).await;
     let providers = value["cloud_providers"]
         .as_array()
         .expect("cloud_providers");

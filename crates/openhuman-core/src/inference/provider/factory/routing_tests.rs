@@ -299,8 +299,8 @@ fn oci_entry(auth_mode: crate::config::schema::cloud_providers::OciAuthMode) -> 
 
 /// OCI profile, session-token and principal modes keep no key in the
 /// credential store, so the billing gate must not require one for them.
-#[test]
-fn keyless_oci_routes_count_as_usable_credentials() {
+#[tokio::test]
+async fn keyless_oci_routes_count_as_usable_credentials() {
     use crate::config::schema::cloud_providers::OciAuthMode;
     for mode in [
         OciAuthMode::ConfigProfile,
@@ -312,7 +312,7 @@ fn keyless_oci_routes_count_as_usable_credentials() {
         let mut config = Config::default();
         config.cloud_providers = vec![oci_entry(mode)];
         assert!(
-            route_has_usable_credentials("oci:openai.gpt-5.5", &config),
+            route_has_usable_credentials("oci:openai.gpt-5.5", &config).await,
             "{mode:?}"
         );
     }
